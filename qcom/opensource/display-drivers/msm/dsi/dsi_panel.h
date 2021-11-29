@@ -291,6 +291,7 @@ struct dsi_panel {
 	bool doze_enabled;
 	enum dsi_doze_mode_type doze_mode;
 #endif
+    int hbm_mode;
 
 };
 
@@ -433,5 +434,7 @@ void dsi_panel_dealloc_cmd_packets(struct dsi_panel_cmd_set *set);
 int dsi_panel_set_doze_status(struct dsi_panel *panel, bool status);
 int dsi_panel_set_doze_mode(struct dsi_panel *panel, enum dsi_doze_mode_type mode);
 #endif
+
+int dsi_panel_apply_hbm_mode(struct dsi_panel *panel);
 
 #endif /* _DSI_PANEL_H_ */
