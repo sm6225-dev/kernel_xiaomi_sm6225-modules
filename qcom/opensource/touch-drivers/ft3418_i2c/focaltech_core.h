@@ -227,6 +227,7 @@ struct fts_ts_data {
     struct early_suspend early_suspend;
 #endif
     int double_tap_pressed;
+    int single_tap_pressed;
 
 #ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
     u8 palm_sensor_switch;
