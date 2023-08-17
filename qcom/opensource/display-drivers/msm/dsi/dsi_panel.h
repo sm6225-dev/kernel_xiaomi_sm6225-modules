@@ -290,6 +290,7 @@ struct dsi_panel {
 #ifdef CONFIG_TARGET_PROJECT_K7T
 	bool doze_enabled;
 	enum dsi_doze_mode_type doze_mode;
+	u32 dsi_refresh_flag;
 #endif
     int hbm_mode;
 
@@ -433,6 +434,10 @@ void dsi_panel_dealloc_cmd_packets(struct dsi_panel_cmd_set *set);
 #ifdef CONFIG_TARGET_PROJECT_K7T
 int dsi_panel_set_doze_status(struct dsi_panel *panel, bool status);
 int dsi_panel_set_doze_mode(struct dsi_panel *panel, enum dsi_doze_mode_type mode);
+
+void dsi_set_backlight_control(struct dsi_panel *panel,
+			 struct dsi_display_mode *adj_mode);
+
 #endif
 
 int dsi_panel_apply_hbm_mode(struct dsi_panel *panel);
