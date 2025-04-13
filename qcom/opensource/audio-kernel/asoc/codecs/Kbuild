@@ -230,6 +230,11 @@ ifdef CONFIG_SND_SOC_AW87XXX
 	AW87XXX_OBJS += aw87xxx/aw_acf_bin.o
 endif
 
+ifdef CONFIG_SND_SOC_LCT_PINCTRL
+         EXTRA_CFLAGS += -DCONFIG_SND_SOC_LCT_PINCTRL
+         LCT_PINCTRL_OBJS := lct_pinctrl/lct_pinctrl.o
+endif
+
 ifdef CONFIG_SND_SOC_WSA881X_ANALOG
 	WSA881X_ANALOG_OBJS += wsa881x-analog.o
 	WSA881X_ANALOG_OBJS += wsa881x-tables-analog.o
@@ -340,6 +345,9 @@ swr_dmic_dlkm-y := $(SWR_DMIC_OBJS)
 
 obj-$(CONFIG_SND_SOC_AW87XXX) += aw87xxx_dlkm.o
 aw87xxx_dlkm-y := $(AW87XXX_OBJS)
+
+obj-$(CONFIG_SND_SOC_LCT_PINCTRL) += lct_pinctrl_dlkm.o
+lct_pinctrl_dlkm-y := $(LCT_PINCTRL_OBJS)
 
 obj-$(CONFIG_SND_SOC_WSA881X_ANALOG) += wsa881x_analog_dlkm.o
 wsa881x_analog_dlkm-y := $(WSA881X_ANALOG_OBJS)

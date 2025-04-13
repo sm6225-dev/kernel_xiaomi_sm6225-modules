@@ -16,7 +16,7 @@ ifeq ($(KERNEL_BUILD), 1)
 endif
 
 ifeq ($(KERNEL_BUILD), 0)
-	ifeq ($(CONFIG_ARCH_KHAJE), y)
+	ifeq ($(CONFIG_ARCH_BENGAL), y)
 		include $(AUDIO_ROOT)/config/bengalauto.conf
 		export
 		INCS    +=  -include $(AUDIO_ROOT)/config/bengalautoconf.h
