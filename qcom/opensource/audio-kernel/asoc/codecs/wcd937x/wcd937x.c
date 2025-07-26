@@ -2528,7 +2528,7 @@ extern int aw87xxx_set_profile(int dev_index, char *profile);
 
 enum aw87xxx_dev_index {
 	AW_DEV_0 = 0,
-	AW_DEV_1 = 0,
+	AW_DEV_1 = 1,
 };
 
 /* copy from aw_acf_bin.c */
