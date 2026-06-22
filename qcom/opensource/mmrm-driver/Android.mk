@@ -1,8 +1,8 @@
 ifneq ($(TARGET_BOARD_PLATFORM), monaco)
-BOARD_OPENSOURCE_DIR ?= vendor/qcom/opensource
+BOARD_OPENSOURCE_DIR ?= sm6225-modules/qcom/opensource
 BOARD_COMMON_DIR ?= device/qcom/common
 
-MMRM_BLD_DIR := $(shell pwd)/$(BOARD_OPENSOURCE_DIR)/mmrm-driver
+MMRM_BLD_DIR := $(shell pwd)/sm6225-modules/qcom/opensource/mmrm-driver
 
 # Build msm-mmrm.ko
 ###########################################################

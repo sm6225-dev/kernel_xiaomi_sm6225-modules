@@ -17,11 +17,11 @@ endif
 
 ifeq ($(TARGET_USES_AUDIOLITE), true)
   AUDIO_DLKM_ENABLE := false
-  include vendor/qcom/opensource/audio-kernel/audio_audiolite_kernel_modules.mk
+  include sm6225-modules/qcom/opensource/audio-kernel/audio_audiolite_kernel_modules.mk
   BOARD_VENDOR_KERNEL_MODULES += $(AUDIO_KERNEL_MODULES)
 endif
 
-BOARD_OPENSOURCE_DIR ?= vendor/qcom/opensource
+BOARD_OPENSOURCE_DIR ?= sm6225-modules/qcom/opensource
 
 ifeq ($(AUDIO_DLKM_ENABLE), true)
   ifeq ($(call is-board-platform-in-list,taro kalama bengal monaco msmnile gen4), true)

@@ -4,7 +4,7 @@ LOCAL_PATH := $(call my-dir)
 LOCAL_MODULE_DDK_BUILD := true
 include $(CLEAR_VARS)
 
-BOARD_OPENSOURCE_DIR ?= vendor/qcom/opensource
+BOARD_OPENSOURCE_DIR ?= sm6225-modules/qcom/opensource
 BOARD_COMMON_DIR ?= device/qcom/common
 
 # This makefile is only for DLKM

@@ -57,7 +57,7 @@ endif
 
 LOCAL_PATH := $(call my-dir)
 $(call wlog,LOCAL_PATH=$(LOCAL_PATH))
-BOARD_OPENSOURCE_DIR ?= vendor/qcom/opensource
+BOARD_OPENSOURCE_DIR ?= sm6225-modules/qcom/opensource
 
 ENABLE_QCACLD := true
 ifeq ($(TARGET_USES_QMAA), true)
