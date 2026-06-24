@@ -537,10 +537,10 @@ static int cam_mem_util_get_dma_buf(size_t len,
 			num_vmids++;
 		}
 	} else if (use_cached_heap) {
-		try_heap = tbl.camera_heap;
+		try_heap = NULL;
 		heap = tbl.system_heap;
 	} else {
-		try_heap = tbl.camera_uncached_heap;
+		try_heap = NULL;
 		heap = tbl.system_uncached_heap;
 	}
 
