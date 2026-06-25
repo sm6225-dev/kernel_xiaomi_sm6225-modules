@@ -131,138 +131,102 @@ int cnss_pci_dsp_link_retrain(struct cnss_pci_data *pci_priv,
 			      u16 target_link_speed);
 #else
 
-int _cnss_pci_enumerate(struct cnss_plat_data *plat_priv, u32 rc_num);
-int cnss_pci_assert_perst(struct cnss_pci_data *pci_priv);
-int cnss_pci_disable_pc(struct cnss_pci_data *pci_priv, bool vote);
-int cnss_pci_set_link_bandwidth(struct cnss_pci_data *pci_priv,
-                                u16 link_speed, u16 link_width);
-int cnss_pci_set_max_link_speed(struct cnss_pci_data *pci_priv,
-                                u32 rc_num, u16 link_speed);
-int cnss_reg_pci_event(struct cnss_pci_data *pci_priv);
-void cnss_dereg_pci_event(struct cnss_pci_data *pci_priv);
-int cnss_wlan_adsp_pc_enable(struct cnss_pci_data *pci_priv, bool control);
-int cnss_set_pci_link(struct cnss_pci_data *pci_priv, bool link_up);
-int cnss_pci_prevent_l1(struct device *dev);
-void cnss_pci_allow_l1(struct device *dev);
-int cnss_pci_get_msi_assignment(struct cnss_pci_data *pci_priv);
-int cnss_pci_get_iommu_addr(struct cnss_pci_data *pci_priv, struct device_node *of_node);
-int cnss_pci_init_smmu(struct cnss_pci_data *pci_priv);
-int _cnss_pci_get_reg_dump(struct cnss_pci_data *pci_priv,
-                           u8 *buf, u32 len);
-void cnss_pci_update_drv_supported(struct cnss_pci_data *pci_priv);
-int cnss_pci_dsp_link_control(struct cnss_pci_data *pci_priv,
-                              bool link_enable);
-int cnss_pci_set_dsp_link_status(struct cnss_pci_data *pci_priv,
-                                 bool link_enable);
-int cnss_pci_get_dsp_link_status(struct cnss_pci_data *pci_priv);
-int cnss_pci_dsp_link_enable(struct cnss_pci_data *pci_priv);
-int cnss_pci_dsp_link_retrain(struct cnss_pci_data *pci_priv,
-                              u16 target_link_speed);
-
-int _cnss_pci_enumerate(struct cnss_plat_data *plat_priv, u32 rc_num)
+static inline int _cnss_pci_enumerate(struct cnss_plat_data *plat_priv, u32 rc_num)
 {
 	return -EOPNOTSUPP;
 }
 
-int cnss_pci_assert_perst(struct cnss_pci_data *pci_priv)
+static inline int cnss_pci_assert_perst(struct cnss_pci_data *pci_priv)
 {
 	return -EOPNOTSUPP;
 }
 
-int cnss_pci_disable_pc(struct cnss_pci_data *pci_priv, bool vote)
+static inline int cnss_pci_disable_pc(struct cnss_pci_data *pci_priv, bool vote)
 {
 	return 0;
 }
 
-int cnss_pci_set_link_bandwidth(struct cnss_pci_data *pci_priv,
+static inline int cnss_pci_set_link_bandwidth(struct cnss_pci_data *pci_priv,
 				u16 link_speed, u16 link_width)
 {
 	return 0;
 }
 
-int cnss_pci_set_max_link_speed(struct cnss_pci_data *pci_priv,
+static inline int cnss_pci_set_max_link_speed(struct cnss_pci_data *pci_priv,
 				u32 rc_num, u16 link_speed)
 {
 	return 0;
 }
 
-int cnss_reg_pci_event(struct cnss_pci_data *pci_priv)
+static inline int cnss_reg_pci_event(struct cnss_pci_data *pci_priv)
 {
 	return 0;
 }
 
-void cnss_dereg_pci_event(struct cnss_pci_data *pci_priv) {}
+static inline void cnss_dereg_pci_event(struct cnss_pci_data *pci_priv) {}
 
-int cnss_wlan_adsp_pc_enable(struct cnss_pci_data *pci_priv, bool control)
+static inline int cnss_wlan_adsp_pc_enable(struct cnss_pci_data *pci_priv, bool control)
 {
 	return 0;
 }
 
-int cnss_set_pci_link(struct cnss_pci_data *pci_priv, bool link_up)
+static inline int cnss_set_pci_link(struct cnss_pci_data *pci_priv, bool link_up)
 {
 	return 0;
 }
 
-int cnss_pci_prevent_l1(struct device *dev)
-{
-	return 0;
-}
-EXPORT_SYMBOL(cnss_pci_prevent_l1);
+int cnss_pci_prevent_l1(struct device *dev);
+void cnss_pci_allow_l1(struct device *dev);
 
-void cnss_pci_allow_l1(struct device *dev)
-{
-}
-EXPORT_SYMBOL(cnss_pci_allow_l1);
-
-int cnss_pci_get_msi_assignment(struct cnss_pci_data *pci_priv)
+static inline int cnss_pci_get_msi_assignment(struct cnss_pci_data *pci_priv)
 {
 	return 0;
 }
 
-int cnss_pci_get_iommu_addr(struct cnss_pci_data *pci_priv, struct device_node *of_node)
+static inline int cnss_pci_get_iommu_addr(struct cnss_pci_data *pci_priv, struct device_node *of_node)
 {
 	return 0;
 }
 
-int cnss_pci_init_smmu(struct cnss_pci_data *pci_priv)
+static inline int cnss_pci_init_smmu(struct cnss_pci_data *pci_priv)
 {
 	return 0;
 }
 
-int _cnss_pci_get_reg_dump(struct cnss_pci_data *pci_priv,
+static inline int _cnss_pci_get_reg_dump(struct cnss_pci_data *pci_priv,
 			   u8 *buf, u32 len)
 {
 	return 0;
 }
 
-void cnss_pci_update_drv_supported(struct cnss_pci_data *pci_priv)
+static inline void cnss_pci_update_drv_supported(struct cnss_pci_data *pci_priv)
 {
 	pci_priv->drv_supported = false;
 }
 
-int cnss_pci_dsp_link_control(struct cnss_pci_data *pci_priv,
+static inline int cnss_pci_dsp_link_control(struct cnss_pci_data *pci_priv,
 			      bool link_enable)
 {
 	return -EOPNOTSUPP;
 }
 
-int cnss_pci_set_dsp_link_status(struct cnss_pci_data *pci_priv,
+static inline int cnss_pci_set_dsp_link_status(struct cnss_pci_data *pci_priv,
 				 bool link_enable)
 {
 	return -EOPNOTSUPP;
 }
 
-int cnss_pci_get_dsp_link_status(struct cnss_pci_data *pci_priv)
+static inline int cnss_pci_get_dsp_link_status(struct cnss_pci_data *pci_priv)
 {
 	return -EOPNOTSUPP;
 }
 
-int cnss_pci_dsp_link_enable(struct cnss_pci_data *pci_priv)
+static inline int cnss_pci_dsp_link_enable(struct cnss_pci_data *pci_priv)
 {
 	return -EOPNOTSUPP;
 }
 
-int cnss_pci_dsp_link_retrain(struct cnss_pci_data *pci_priv,
+static inline int cnss_pci_dsp_link_retrain(struct cnss_pci_data *pci_priv,
 			      u16 target_link_speed)
 {
 	return -EOPNOTSUPP;

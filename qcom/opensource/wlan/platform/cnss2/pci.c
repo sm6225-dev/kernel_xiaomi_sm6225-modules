@@ -8301,3 +8301,210 @@ void cnss_pci_deinit(struct cnss_plat_data *plat_priv)
 		cnss_driver_registered = false;
 	}
 }
+
+#if !IS_ENABLED(CONFIG_PCI_MSM) && !IS_ENABLED(CONFIG_PCIE_QCOM_ECAM)
+int cnss_pci_prevent_l1(struct device *dev)
+{
+	return 0;
+}
+EXPORT_SYMBOL(cnss_pci_prevent_l1);
+
+void cnss_pci_allow_l1(struct device *dev)
+{
+}
+EXPORT_SYMBOL(cnss_pci_allow_l1);
+
+bool cnss_pci_is_sync_probe(void)
+{
+	return false;
+}
+#endif
+
+#if !IS_ENABLED(CONFIG_MHI_BUS)
+/* Declare MHI prototypes inline to satisfy -Wmissing-prototypes */
+struct mhi_controller;
+struct mhi_controller_config;
+struct mhi_device;
+struct mhi_link_info;
+
+struct mhi_controller *mhi_alloc_controller(void);
+void mhi_free_controller(struct mhi_controller *mhi_cntrl);
+int mhi_register_controller(struct mhi_controller *mhi_cntrl,
+			    const struct mhi_controller_config *config);
+void mhi_unregister_controller(struct mhi_controller *mhi_cntrl);
+int mhi_prepare_for_power_up(struct mhi_controller *mhi_cntrl);
+int mhi_sync_power_up(struct mhi_controller *mhi_cntrl);
+void mhi_power_down(struct mhi_controller *mhi_cntrl, bool graceful);
+void mhi_unprepare_after_power_down(struct mhi_controller *mhi_cntrl);
+int mhi_download_rddm_image(struct mhi_controller *mhi_cntrl, bool in_panic);
+enum mhi_ee_type mhi_get_exec_env(struct mhi_controller *mhi_cntrl);
+void mhi_device_get(struct mhi_device *mhi_dev);
+int mhi_device_get_sync(struct mhi_device *mhi_dev);
+void mhi_device_put(struct mhi_device *mhi_dev);
+int mhi_pm_resume(struct mhi_controller *mhi_cntrl);
+int mhi_pm_suspend(struct mhi_controller *mhi_cntrl);
+int mhi_pm_fast_suspend(struct mhi_controller *mhi_cntrl, bool notify);
+int mhi_pm_fast_resume(struct mhi_controller *mhi_cntrl, bool notify);
+void mhi_set_m2_timeout_ms(struct mhi_controller *mhi_cntrl, u32 timeout);
+int mhi_device_get_sync_atomic(struct mhi_device *mhi_dev, int timeout_us,
+			       bool in_panic);
+int mhi_host_notify_db_disable_trace(struct mhi_controller *mhi_cntrl);
+void mhi_controller_set_bw_scale_cb(struct mhi_controller *mhi_cntrl,
+				    int (*cb)(struct mhi_controller *,
+					      struct mhi_link_info *));
+int mhi_force_reset(struct mhi_controller *mhi_cntrl);
+void mhi_controller_set_base(struct mhi_controller *mhi_cntrl,
+			     void __iomem *base);
+void mhi_debug_reg_dump(struct mhi_controller *mhi_cntrl);
+void mhi_dump_sfr(struct mhi_controller *mhi_cntrl);
+bool mhi_scan_rddm_cookie(struct mhi_controller *mhi_cntrl, u32 cookie);
+int mhi_force_rddm_mode(struct mhi_controller *mhi_cntrl);
+int mhi_get_soc_info(struct mhi_controller *mhi_cntrl);
+void mhi_report_error(struct mhi_controller *mhi_cntrl,
+		      enum mhi_callback callback);
+int mhi_pm_resume_force(struct mhi_controller *mhi_cntrl);
+
+struct mhi_controller *mhi_alloc_controller(void)
+{
+	return NULL;
+}
+
+void mhi_free_controller(struct mhi_controller *mhi_cntrl)
+{
+}
+
+int mhi_register_controller(struct mhi_controller *mhi_cntrl,
+			    const struct mhi_controller_config *config)
+{
+	return 0;
+}
+
+void mhi_unregister_controller(struct mhi_controller *mhi_cntrl)
+{
+}
+
+int mhi_prepare_for_power_up(struct mhi_controller *mhi_cntrl)
+{
+	return 0;
+}
+
+int mhi_sync_power_up(struct mhi_controller *mhi_cntrl)
+{
+	return 0;
+}
+
+void mhi_power_down(struct mhi_controller *mhi_cntrl, bool graceful)
+{
+}
+
+void mhi_unprepare_after_power_down(struct mhi_controller *mhi_cntrl)
+{
+}
+
+int mhi_download_rddm_image(struct mhi_controller *mhi_cntrl, bool in_panic)
+{
+	return 0;
+}
+
+enum mhi_ee_type mhi_get_exec_env(struct mhi_controller *mhi_cntrl)
+{
+	return MHI_EE_MAX;
+}
+
+void mhi_device_get(struct mhi_device *mhi_dev)
+{
+}
+
+int mhi_device_get_sync(struct mhi_device *mhi_dev)
+{
+	return 0;
+}
+
+void mhi_device_put(struct mhi_device *mhi_dev)
+{
+}
+
+int mhi_pm_resume(struct mhi_controller *mhi_cntrl)
+{
+	return 0;
+}
+
+int mhi_pm_suspend(struct mhi_controller *mhi_cntrl)
+{
+	return 0;
+}
+
+int mhi_pm_fast_suspend(struct mhi_controller *mhi_cntrl, bool notify)
+{
+	return 0;
+}
+
+int mhi_pm_fast_resume(struct mhi_controller *mhi_cntrl, bool notify)
+{
+	return 0;
+}
+
+void mhi_set_m2_timeout_ms(struct mhi_controller *mhi_cntrl, u32 timeout)
+{
+}
+
+int mhi_device_get_sync_atomic(struct mhi_device *mhi_dev, int timeout_us,
+			       bool in_panic)
+{
+	return 0;
+}
+
+int mhi_host_notify_db_disable_trace(struct mhi_controller *mhi_cntrl)
+{
+	return 0;
+}
+
+void mhi_controller_set_bw_scale_cb(struct mhi_controller *mhi_cntrl,
+				    int (*cb)(struct mhi_controller *,
+					      struct mhi_link_info *))
+{
+}
+
+int mhi_force_reset(struct mhi_controller *mhi_cntrl)
+{
+	return 0;
+}
+
+void mhi_controller_set_base(struct mhi_controller *mhi_cntrl,
+			     void __iomem *base)
+{
+}
+
+void mhi_debug_reg_dump(struct mhi_controller *mhi_cntrl)
+{
+}
+
+void mhi_dump_sfr(struct mhi_controller *mhi_cntrl)
+{
+}
+
+bool mhi_scan_rddm_cookie(struct mhi_controller *mhi_cntrl, u32 cookie)
+{
+	return false;
+}
+
+int mhi_force_rddm_mode(struct mhi_controller *mhi_cntrl)
+{
+	return 0;
+}
+
+int mhi_get_soc_info(struct mhi_controller *mhi_cntrl)
+{
+	return 0;
+}
+
+void mhi_report_error(struct mhi_controller *mhi_cntrl,
+		      enum mhi_callback callback)
+{
+}
+
+int mhi_pm_resume_force(struct mhi_controller *mhi_cntrl)
+{
+	return 0;
+}
+#endif
