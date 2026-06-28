@@ -246,7 +246,7 @@ static int fts_create_gesture_sysfs(struct device *dev)
 
 static void fts_gesture_report(struct input_dev *input_dev, int gesture_id)
 {
-    int gesture;
+    int gesture = 1;
 
     if (is_dt2w_sensor) {
         fts_data->double_tap_pressed = (gesture_id == GESTURE_DOUBLECLICK) ? 1 : 0;
