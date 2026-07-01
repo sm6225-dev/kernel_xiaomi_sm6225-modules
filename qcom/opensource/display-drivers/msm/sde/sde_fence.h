@@ -25,6 +25,10 @@
 #define SDE_FENCE_NAME_SIZE	24
 
 #define MAX_SDE_HFENCE_OUT_SIGNAL_PING_PONG 2
+
+struct sde_hw_ctl;
+struct sde_hw_mdp;
+
 /**
  * struct sde_fence_context - release/retire fence context/timeline structure
  * @commit_count: Number of detected commits since bootup

@@ -84,7 +84,7 @@ static int ea_panel_send_pcc(u32 bl_lvl)
 	pr_debug("DSPP Blob ID %d has length %zu\n",
 			prop->base.id, blob->length);
 
-	rc = sde_cp_crtc_set_property(crtc, prop, blob->base.id);
+	rc = sde_cp_crtc_set_property(crtc, crtc->state, prop, blob->base.id);
 	if (rc) {
 		pr_err("DSPP: Cannot set PCC: %d.\n", rc);
 	}
