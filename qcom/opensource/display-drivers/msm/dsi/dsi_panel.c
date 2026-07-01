@@ -5144,7 +5144,7 @@ static struct notifier_block dsi_panel_dc_dim_notifier = {
 	.notifier_call = dsi_panel_dc_dim_notifier_callback,
 };
 
-static int __init dsi_panel_dc_dim_init(void)
+int __init dsi_panel_dc_dim_init(void)
 {
 
 	int ret = 0;
@@ -5158,12 +5158,11 @@ static int __init dsi_panel_dc_dim_init(void)
 	return ret;
 }
 
-static void __exit dsi_panel_dc_dim_exit(void)
+void __exit dsi_panel_dc_dim_exit(void)
 {
 	// Unregister the driver module as a client of the DRM PANEL event notifier
 	drm_unregister_client(&dsi_panel_dc_dim_notifier);
 }
 
-module_init(dsi_panel_dc_dim_init);
-module_exit(dsi_panel_dc_dim_exit);
+
 #endif
