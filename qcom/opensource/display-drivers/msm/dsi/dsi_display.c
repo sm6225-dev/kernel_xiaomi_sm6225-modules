@@ -9406,6 +9406,11 @@ struct dsi_display *get_main_display(void) {
 }
 #endif
 
+#ifdef CONFIG_TARGET_PROJECT_K7T
+extern int __init dsi_panel_dc_dim_init(void);
+extern void __exit dsi_panel_dc_dim_exit(void);
+#endif
+
 void __init dsi_display_register(void)
 {
 	dsi_phy_drv_register();
@@ -9414,10 +9419,18 @@ void __init dsi_display_register(void)
 	dsi_display_parse_boot_display_selection();
 
 	platform_driver_register(&dsi_display_driver);
+
+#ifdef CONFIG_TARGET_PROJECT_K7T
+	dsi_panel_dc_dim_init();
+#endif
 }
 
 void __exit dsi_display_unregister(void)
 {
+#ifdef CONFIG_TARGET_PROJECT_K7T
+	dsi_panel_dc_dim_exit();
+#endif
+
 	platform_driver_unregister(&dsi_display_driver);
 	dsi_ctrl_drv_unregister();
 	dsi_phy_drv_unregister();
