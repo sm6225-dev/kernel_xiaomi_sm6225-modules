@@ -387,7 +387,7 @@ static int dsi_panel_power_on(struct dsi_panel *panel)
 	notifier_data.refresh_rate = 90;
 	notifier_data.id = 1;
 	DSI_INFO("[%s]: dsi panel power on\n", __func__);
-	drm_panel_notifier_call_chain(&panel->drm_panel, DRM_PANEL_EVENT_BLANK, &notifier_data);
+	drm_notifier_call_chain(DRM_PANEL_EVENT_BLANK, &notifier_data);
 	if (rc) {
 		DSI_ERR("[%s] failed to reset panel, rc=%d\n", panel->name, rc);
 		goto error_disable_gpio;
@@ -5188,7 +5188,7 @@ int dsi_panel_post_unprepare(struct dsi_panel *panel)
 	notifier_data.refresh_rate = 90;
 	notifier_data.id = 1;
 	DSI_INFO("[%s]: dsi panel power off\n", __func__);
-	drm_panel_notifier_call_chain(&panel->drm_panel, DRM_PANEL_EARLY_EVENT_BLANK, &notifier_data);
+	drm_notifier_call_chain(DRM_PANEL_EARLY_EVENT_BLANK, &notifier_data);
 
 error:
 	mutex_unlock(&panel->panel_lock);

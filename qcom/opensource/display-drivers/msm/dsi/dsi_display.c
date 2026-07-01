@@ -5758,7 +5758,7 @@ error:
 static ssize_t sysfs_doze_mode_read(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
-	enum dsi_doze_mode_type doze_mode;
+	enum dsi_doze_mode_type doze_mode = 0;
 	struct dsi_display *display;
 	struct dsi_panel *panel;
 
