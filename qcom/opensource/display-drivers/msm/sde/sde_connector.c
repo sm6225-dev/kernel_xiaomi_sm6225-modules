@@ -1742,6 +1742,9 @@ static int sde_connector_atomic_set_property(struct drm_connector *connector,
 	case CONNECTOR_PROP_LP:
 		if (connector->dev)
 			connector->dev->doze_state = val;
+		/* suspend case: clear stale MISR */
+		if (val == SDE_MODE_DPMS_OFF)
+			memset(&c_conn->previous_misr_sign, 0, sizeof(struct sde_misr_sign));
 		break;
 	/*add for thermal end*/
 	case CONNECTOR_PROP_OUT_FB:
@@ -1810,11 +1813,6 @@ static int sde_connector_atomic_set_property(struct drm_connector *connector,
 		break;
 	case CONNECTOR_PROP_DYN_TRANSFER_TIME:
 		_sde_connector_set_prop_dyn_transfer_time(c_conn, val);
-		break;
-	case CONNECTOR_PROP_LP:
-		/* suspend case: clear stale MISR */
-		if (val == SDE_MODE_DPMS_OFF)
-			memset(&c_conn->previous_misr_sign, 0, sizeof(struct sde_misr_sign));
 		break;
 	default:
 		break;
