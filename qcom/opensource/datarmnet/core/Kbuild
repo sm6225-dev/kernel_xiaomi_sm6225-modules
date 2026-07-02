@@ -3,9 +3,11 @@ ccflags-y	+= -DRMNET_LA_PLATFORM
 endif
 
 ifeq ($(CONFIG_ARCH_KHAJE), y)
-  ifeq ($(MSM_ARCH), bengal)
     ccflags-y       += -DRMNET_LA_PLATFORM
-  endif
+endif
+
+ifeq ($(CONFIG_ARCH_BENGAL), y)
+    ccflags-y       += -DRMNET_LA_PLATFORM
 endif
 
 ifeq ($(CONFIG_ARCH_SDXNIGHTJAR), y)
@@ -46,10 +48,15 @@ rmnet_ctl-y := \
 endif
 
 ifeq ($(CONFIG_ARCH_KHAJE), y)
-  ifeq ($(MSM_ARCH), bengal)
-    obj-m += rmnet_ctl.o
-    rmnet_ctl-y := \
-        rmnet_ctl_client.o \
-        rmnet_ctl_ipa.o
-  endif
+obj-m += rmnet_ctl.o
+rmnet_ctl-y := \
+	rmnet_ctl_client.o \
+	rmnet_ctl_ipa.o
+endif
+
+ifeq ($(CONFIG_ARCH_BENGAL), y)
+obj-m += rmnet_ctl.o
+rmnet_ctl-y := \
+	rmnet_ctl_client.o \
+	rmnet_ctl_ipa.o
 endif
