@@ -18,12 +18,10 @@ endif
 ifeq ($(KERNEL_BUILD), 0)
 	ifeq ($(CONFIG_ARCH_BENGAL), y)
 		include $(AUDIO_ROOT)/config/bengalauto.conf
-		export
 		INCS    +=  -include $(AUDIO_ROOT)/config/bengalautoconf.h
 	endif
 	ifeq ($(CONFIG_ARCH_SCUBA), y)
 		include $(AUDIO_ROOT)/config/bengalauto.conf
-		export
 		INCS    +=  -include $(AUDIO_ROOT)/config/bengalautoconf.h
 	endif
 endif
