@@ -1322,6 +1322,11 @@ int kgsl_pwrctrl_enable_cx_gdsc(struct kgsl_device *device)
 	if (IS_ERR_OR_NULL(regulator))
 		return 0;
 
+	if (regulator_is_enabled(regulator)) {
+		pwr->cx_gdsc_wait = false;
+		complete_all(&pwr->cx_gdsc_gate);
+	}
+
 	ret = wait_for_completion_timeout(&pwr->cx_gdsc_gate, msecs_to_jiffies(5000));
 	if (!ret) {
 		dev_err(device->dev, "GPU CX wait timeout. Dumping CX votes:\n");
