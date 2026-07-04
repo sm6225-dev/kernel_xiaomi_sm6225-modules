@@ -113,14 +113,20 @@ void ea_panel_mode_ctrl(struct dsi_panel *panel, bool enable)
 
 u32 ea_panel_calc_backlight(u32 bl_lvl)
 {
+	static bool pcc_is_dimmed = false;
 	last_level = bl_lvl;
 
 	if (pcc_backlight_enable && bl_lvl != 0 && bl_lvl < ELVSS_OFF_THRESHOLD) {
 		if (ea_panel_send_pcc(bl_lvl))
 			pr_err("ERROR: Failed to send PCC\n");
-
+		
+		pcc_is_dimmed = true;
 		return ELVSS_OFF_THRESHOLD;
 	} else {
+		if (pcc_is_dimmed) {
+			ea_panel_send_pcc(ELVSS_OFF_THRESHOLD);
+			pcc_is_dimmed = false;
+		}
 		return bl_lvl;
 	}
 }
