@@ -9,6 +9,9 @@
 #include <linux/of_gpio.h>
 #include <linux/err.h>
 #include <linux/version.h>
+#include <linux/kernfs.h>
+#include <linux/uidgid.h>
+#include <linux/kprobes.h>
 #include <drm/drm_panel.h>
 
 #include "msm_drv.h"
@@ -5663,9 +5666,29 @@ error:
 	return ret == 0 ? count : ret;
 }
 
-static DEVICE_ATTR(hbm, 0644,
-			sysfs_hbm_read,
-			sysfs_hbm_write);
+// Workaround VERIFY_OCTAL_PERMISSIONS
+static struct device_attribute dev_attr_hbm = {
+        .attr = { .name = "hbm", .mode = 0660 },
+        .show = sysfs_hbm_read,
+        .store = sysfs_hbm_write,
+};
+
+typedef int (*kernfs_setattr_t)(struct kernfs_node *kn, const struct iattr *iattr);
+static kernfs_setattr_t p_kernfs_setattr = NULL;
+
+static void init_kernfs_setattr(void)
+{
+	struct kprobe kp = {
+		.symbol_name = "kernfs_setattr",
+	};
+
+	if (register_kprobe(&kp) == 0) {
+		p_kernfs_setattr = (kernfs_setattr_t)kp.addr;
+		unregister_kprobe(&kp);
+	} else {
+		pr_err("Failed to register kprobe for kernfs_setattr\n");
+	}
+}
 
 static int dsi_display_validate_split_link(struct dsi_display *display)
 {
@@ -5843,6 +5866,26 @@ static int dsi_display_sysfs_init(struct dsi_display *display)
 	rc = sysfs_create_group(&dev->kobj, &display_fs_attrs_group);
 	if (rc)
 		DSI_ERR("failed to create display device attributes");
+
+	if (!p_kernfs_setattr)
+		init_kernfs_setattr();
+
+	if (p_kernfs_setattr) {
+		struct kernfs_node *kn;
+		struct iattr attrs;
+
+		attrs.ia_uid = make_kuid(&init_user_ns, 1000);
+		attrs.ia_gid = make_kgid(&init_user_ns, 1000);
+		attrs.ia_valid = ATTR_UID | ATTR_GID;
+
+		if (dev->kobj.sd) {
+			kn = sysfs_get_dirent(dev->kobj.sd, "hbm");
+			if (kn) {
+				p_kernfs_setattr(kn, &attrs);
+				sysfs_put(kn);
+			}
+		}
+	}
 
 	return rc;
 

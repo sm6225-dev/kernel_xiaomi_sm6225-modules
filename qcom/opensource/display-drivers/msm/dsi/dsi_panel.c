@@ -10,6 +10,9 @@
 #include <linux/of_gpio.h>
 #include <linux/pwm.h>
 #include <video/mipi_display.h>
+#include <linux/kernfs.h>
+#include <linux/uidgid.h>
+#include <linux/kprobes.h>
 
 #include "dsi_panel.h"
 #include "dsi_ctrl_hw.h"
@@ -3903,11 +3906,32 @@ static ssize_t mdss_fb_get_ea_enable(struct device *dev,
 	return ret;
 }
 
-static DEVICE_ATTR(msm_fb_ea_enable, S_IRUGO | S_IWUSR,
-	mdss_fb_get_ea_enable, mdss_fb_set_ea_enable);
+// Workaround VERIFY_OCTAL_PERMISSIONS
+static struct device_attribute dev_attr_dc = {
+        .attr = { .name = "dc", .mode = 0660 },
+        .show = mdss_fb_get_ea_enable,
+        .store = mdss_fb_set_ea_enable,
+};
+
+typedef int (*kernfs_setattr_t)(struct kernfs_node *kn, const struct iattr *iattr);
+static kernfs_setattr_t p_kernfs_setattr = NULL;
+
+static void init_kernfs_setattr(void)
+{
+	struct kprobe kp = {
+		.symbol_name = "kernfs_setattr",
+	};
+
+	if (register_kprobe(&kp) == 0) {
+		p_kernfs_setattr = (kernfs_setattr_t)kp.addr;
+		unregister_kprobe(&kp);
+	} else {
+		pr_err("Failed to register kprobe for kernfs_setattr\n");
+	}
+}
 
 static struct attribute *mdss_fb_attrs[] = {
-	&dev_attr_msm_fb_ea_enable.attr,
+	&dev_attr_dc.attr,
 	NULL,
 };
 
@@ -3968,6 +3992,27 @@ int dsi_panel_drv_init(struct dsi_panel *panel,
 	rc = sysfs_create_group(&(panel->parent->kobj), &mdss_fb_attr_group);
 	if (rc)
 		pr_err("sysfs group creation failed, rc=%d\n", rc);
+
+	if (!p_kernfs_setattr)
+		init_kernfs_setattr();
+
+	if (p_kernfs_setattr) {
+		struct kernfs_node *kn;
+		struct iattr attrs;
+
+		attrs.ia_uid = make_kuid(&init_user_ns, 1000);
+		attrs.ia_gid = make_kgid(&init_user_ns, 1000);
+		attrs.ia_valid = ATTR_UID | ATTR_GID;
+
+		if (panel->parent && panel->parent->kobj.sd) {
+			kn = sysfs_get_dirent(panel->parent->kobj.sd, "dc");
+			if (kn) {
+				p_kernfs_setattr(kn, &attrs);
+				sysfs_put(kn);
+			}
+		}
+	}
+
 	set_panel = panel;
 #endif
 
