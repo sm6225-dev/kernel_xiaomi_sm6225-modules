@@ -52,7 +52,7 @@
 #define KEY_GESTURE_V                           KEY_V
 #define KEY_GESTURE_C                           KEY_C
 #define KEY_GESTURE_Z                           KEY_Z
-#define KEY_GESTURE_SINGLECLICK                 KEY_GOTO
+#define KEY_GESTURE_SINGLECLICK                 KEY_WAKEUP
 
 #define GESTURE_LEFT                            0x20
 #define GESTURE_RIGHT                           0x21
@@ -248,15 +248,12 @@ static void fts_gesture_report(struct input_dev *input_dev, int gesture_id)
 {
     int gesture = 1;
 
-    if (is_dt2w_sensor) {
-        fts_data->double_tap_pressed = (gesture_id == GESTURE_DOUBLECLICK) ? 1 : 0;
-        sysfs_notify(&fts_data->client->dev.kobj, NULL, "double_tap_pressed");
-    }
+    /* Unconditionally update sysfs nodes for Sensors HAL */
+    fts_data->double_tap_pressed = (gesture_id == GESTURE_DOUBLECLICK) ? 1 : 0;
+    sysfs_notify(&fts_data->client->dev.kobj, NULL, "double_tap_pressed");
 
-    if (is_st2w_sensor) {
-      fts_data->single_tap_pressed = (gesture_id == GESTURE_SINGLECLICK) ? 1 : 0;
-      sysfs_notify(&fts_data->client->dev.kobj, NULL, "single_tap_pressed");
-    }
+    fts_data->single_tap_pressed = (gesture_id == GESTURE_SINGLECLICK) ? 1 : 0;
+    sysfs_notify(&fts_data->client->dev.kobj, NULL, "single_tap_pressed");
 
     FTS_INFO("gesture_id:0x%x", gesture_id);
     switch (gesture_id) {
@@ -270,8 +267,7 @@ static void fts_gesture_report(struct input_dev *input_dev, int gesture_id)
         gesture = KEY_GESTURE_UP;
         break;
     case GESTURE_DOUBLECLICK:
-        if (!is_dt2w_sensor)
-            gesture = KEY_GESTURE_DOUBLECLICK;
+        /* Handled via Sensors HAL */
         break;
     case GESTURE_DOWN:
         gesture = KEY_GESTURE_DOWN;
@@ -304,8 +300,7 @@ static void fts_gesture_report(struct input_dev *input_dev, int gesture_id)
         gesture = KEY_GESTURE_C;
         break;
     case GESTURE_SINGLECLICK:
-        if (!is_st2w_sensor)
-	  gesture = KEY_GESTURE_SINGLECLICK;
+        /* Handled via Sensors HAL */
         break;
     default:
         gesture = -1;

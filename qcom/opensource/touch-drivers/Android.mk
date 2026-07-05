@@ -62,6 +62,7 @@ ifeq ($(TOUCH_DLKM_ENABLE),  true)
        KBUILD_OPTIONS += MODNAME=touch_dlkm
        KBUILD_OPTIONS += BOARD_PLATFORM=$(TARGET_BOARD_PLATFORM)
        KBUILD_OPTIONS += $(TOUCH_SELECT)
+       KBUILD_OPTIONS += KBUILD_EXTRA_SYMBOLS=$(PWD)/$(call intermediates-dir-for,DLKM,msm-ext-disp-module-symvers)/Module.symvers
 
        ###########################################################
 

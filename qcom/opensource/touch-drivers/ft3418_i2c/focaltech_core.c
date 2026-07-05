@@ -38,17 +38,18 @@
 #include <linux/of_device.h>
 #include <linux/of_gpio.h>
 #include <linux/of_irq.h>
-#if defined(CONFIG_FB)
-//#include <linux/notifier.h>
+#if 1 // defined(CONFIG_FB)
+#include <linux/notifier.h>
+#include <drm/drm_panel.h>
 //#include <linux/fb.h>
 #ifdef CONFIG_DRM
 //#if defined(CONFIG_DRM_PANEL)
 //#include <drm/drm_panel.h>
 //#else
-#include <linux/msm_drm_notify.h>
+//#include <linux/msm_drm_notify.h>
 #endif
 #include <linux/notifier.h>
-#include <linux/fb.h>
+//#include <linux/fb.h>
 #elif defined(CONFIG_HAS_EARLYSUSPEND)
 #include <linux/earlysuspend.h>
 #define FTS_SUSPEND_LEVEL 1     /* Early-suspend level */
@@ -1252,8 +1253,8 @@ static void fts_suspend_work(struct work_struct *work)
     fts_ts_suspend(ts_data->dev);
 }
 
-#if defined(CONFIG_FB)
-#ifndef _MSM_DRM_NOTIFY_H_
+#if 1 // defined(CONFIG_FB)
+#if 0 // #ifndef _MSM_DRM_NOTIFY_H_
 static int fb_notifier_callback(struct notifier_block *self,
                                 unsigned long event, void *data)
 {
@@ -1380,10 +1381,10 @@ static int drm_notifier_callback(struct notifier_block *self,
 static int drm_notifier_callback(struct notifier_block *self,
                                  unsigned long event, void *data)
 {
-    struct msm_drm_notifier *evdata = data;
+    struct drm_notify_data *evdata = data;
     int *blank = NULL;
     struct fts_ts_data *ts_data = container_of(self, struct fts_ts_data,
-                                  fb_notif);
+                                  drm_notif);
 
     if (!evdata) {
         FTS_ERROR("evdata is null");
@@ -1595,15 +1596,15 @@ static int fts_ts_probe_entry(struct fts_ts_data *ts_data)
 #endif
 	pm_runtime_enable(ts_data->dev);
 
-#if defined(CONFIG_FB)
-#ifndef _MSM_DRM_NOTIFY_H_
+#if 1 // defined(CONFIG_FB)
+#if 0 // #ifndef _MSM_DRM_NOTIFY_H_
     ts_data->fb_notif.notifier_call = fb_notifier_callback;
     ret = fb_register_client(&ts_data->fb_notif);
     if (ret) {
         FTS_ERROR("[FB]Unable to register fb_notifier: %d", ret);
     }
 #else //#ifdef CONFIG_DRM
-    ts_data->fb_notif.notifier_call = drm_notifier_callback;
+    ts_data->drm_notif.notifier_call = drm_notifier_callback;
 /*
 #if defind(CONFIG_DRM_PANEL)
     if (active_panel) {
@@ -1613,9 +1614,9 @@ static int fts_ts_probe_entry(struct fts_ts_data *ts_data)
     }
 #else
 */
-    ret = drm_register_client(&ts_data->fb_notif);
+    ret = drm_register_client(&ts_data->drm_notif);
     if (ret) {
-        FTS_ERROR("[DRM]Unable to register fb_notifier: %d\n", ret);
+        FTS_ERROR("[DRM]Unable to register drm_notifier: %d\n", ret);
     }
 #endif
 #elif defined(CONFIG_HAS_EARLYSUSPEND)
@@ -1714,8 +1715,8 @@ static int fts_ts_remove_entry(struct fts_ts_data *ts_data)
     if (ts_data->ts_workqueue)
         destroy_workqueue(ts_data->ts_workqueue);
 
-#if defined(CONFIG_FB)
-#ifndef _MSM_DRM_NOTIFY_H_
+#if 1 // defined(CONFIG_FB)
+#if 0 // #ifndef _MSM_DRM_NOTIFY_H_
     if (fb_unregister_client(&ts_data->fb_notif))
         FTS_ERROR("[FB]Error occurred while unregistering fb_notifier.");
 #else //#ifdef CONFIG_DRM
@@ -1725,8 +1726,8 @@ static int fts_ts_remove_entry(struct fts_ts_data *ts_data)
         drm_panel_notifier_unregister(active_panel, &ts_data->fb_notif);
 #else
 */
-    if (drm_unregister_client(&ts_data->fb_notif))
-        FTS_ERROR("[DRM]Error occurred while unregistering fb_notifier.\n");
+    if (drm_unregister_client(&ts_data->drm_notif))
+        FTS_ERROR("[DRM]Error occurred while unregistering drm_notifier.\n");
 #endif
 #elif defined(CONFIG_HAS_EARLYSUSPEND)
     unregister_early_suspend(&ts_data->early_suspend);
