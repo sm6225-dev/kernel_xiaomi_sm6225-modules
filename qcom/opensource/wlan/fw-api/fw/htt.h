@@ -283,9 +283,11 @@
  * 3.153 Add passthru_pkt flag in rx_peer_metadata structs.
  * 3.154 Add T2H PEER_DEL_ALL_GLOBAL_VDEV_ID_UNMAP msg def.
  * 3.155 Add rxmon hdrlen specs in rx_ring_selection_cfg_t.
+ * 3.156 Add qdata_consent_pkt flag in rx_peer_metadata_v1a and v2.
+ * 3.157 Add TCL_METADATA_V3 defs.
  */
 #define HTT_CURRENT_VERSION_MAJOR 3
-#define HTT_CURRENT_VERSION_MINOR 155
+#define HTT_CURRENT_VERSION_MINOR 157
 
 #define HTT_NUM_TX_FRAG_DESC  1024
 
@@ -582,6 +584,7 @@ PREPACK struct htt_option_tlv_support_tx_msdu_desc_ext_t {
  * should be used:
  *     V1 -> use htt_tx_tcl_metadata struct
  *     V2 -> use htt_tx_tcl_metadata_v2 struct
+ *     V3 -> use htt_tx_tcl_metadata_v3 struct
  * Old FW will only support V1.
  * New FW will support V2. New FW will still support V1, at least during
  * a transition period.
@@ -607,11 +610,17 @@ PREPACK struct htt_option_tlv_support_tx_msdu_desc_ext_t {
  * and the FW will crash in wal_tx_de_fast.c. For version 2.1 and
  * above we will use htt_tx_tcl_svc_class_id_metadata.ast_index
  * in TCLV2 command and do the dynamic AST allocations.
+ *
+ * Apr 2026: Added HTT_OPTION_TLV_TCL_METADATA_V3.
+ * This version supports the updated tcl_data_cmd introduced in Boron.
+ * All fields are identical to V2; however, the field ordering has been
+ * modified to accommodate MAC requirements.
  */
 enum HTT_OPTION_TLV_TCL_METADATA_VER_VALUES {
     HTT_OPTION_TLV_TCL_METADATA_V1 = 1,
     HTT_OPTION_TLV_TCL_METADATA_V2 = 2,
-    /* values 3-20 reserved */
+    HTT_OPTION_TLV_TCL_METADATA_V3 = 3,
+    /* values 4-20 reserved */
     HTT_OPTION_TLV_TCL_METADATA_V21 = 21,
 };
 
@@ -864,13 +873,16 @@ typedef enum {
     HTT_STATS_PDEV_RTT_DELAY_TAG                    = 205, /* htt_stats_pdev_rtt_delay_tlv */
     HTT_STATS_PDEV_AOA_TAG                          = 206, /* htt_stats_pdev_aoa_tlv */
     HTT_STATS_PDEV_FTM_TPCCAL_TAG                   = 207, /* htt_stats_pdev_ftm_tpccal_tlv */
-    HTT_STATS_PDEV_UL_MUMIMO_GRP_STATS_TAG          = 208, /* htt_stats_pdev_ulmumimo_grp_stats_tlv */
-    HTT_STATS_PDEV_UL_MUMIMO_DENYLIST_STATS_TAG     = 209, /* htt_stats_pdev_ulmumimo_denylist_stats_tlv */
-    HTT_STATS_PDEV_UL_MUMIMO_SEQ_TERM_STATS_TAG     = 210, /* htt_stats_pdev_ulmumimo_seq_term_stats_tlv */
-    HTT_STATS_PDEV_UL_MUMIMO_HIST_INELIGIBILITY_TAG = 211, /* htt_stats_pdev_ulmumimo_hist_ineligibility_tlv */
+    HTT_STATS_PDEV_UL_MUMIMO_GRP_STATS_TAG          = 208, /* htt_stats_pdev_ul_mumimo_grp_stats_tlv */
+    HTT_STATS_PDEV_UL_MUMIMO_DENYLIST_STATS_TAG     = 209, /* htt_stats_pdev_ul_mumimo_denylist_stats_tlv */
+    HTT_STATS_PDEV_UL_MUMIMO_SEQ_TERM_STATS_TAG     = 210, /* htt_stats_pdev_ul__mumimo_seq_term_stats_tlv */
+    HTT_STATS_PDEV_UL_MUMIMO_HIST_INELIGIBILITY_TAG = 211, /* htt_stats_pdev_ul_mumimo_hist_ineligibility_tlv */
     HTT_STATS_PHY_PAPRD_PB_TAG                      = 212, /* htt_stats_phy_paprd_pb_tlv */
     HTT_STATS_HDS_PROF_STATS_TAG                    = 213, /* htt_stat_hds_prof_stats_tlv */
-    HTT_STATS_TX_PDEV_MDSB_NUM_USERS_HISTOGRAM_TLV_TAG = 214, /* htt_stats_tx_pdev_mdsb_num_users_histogram_tlv */
+    HTT_STATS_TX_PDEV_MDSB_NUM_USERS_HISTOGRAM_TAG = 214, /* htt_stats_tx_pdev_mdsb_num_users_histogram_tlv */
+        /* preserve old name as an alias for the corrected name */
+        HTT_STATS_TX_PDEV_MDSB_NUM_USERS_HISTOGRAM_TLV_TAG =
+            HTT_STATS_TX_PDEV_MDSB_NUM_USERS_HISTOGRAM_TAG,
     HTT_STATS_TX_PDEV_PENDING_SEQ_CNT_ON_SCHED_POST_HIST_TAG = 215, /* htt_stats_tx_pdev_pending_seq_cnt_on_sched_post_hist_tlv */
     HTT_STATS_TX_PDEV_PENDING_SEQ_CNT_IN_HWQ_HIST_TAG        = 216, /* htt_stats_tx_pdev_pending_seq_cnt_in_hwq_hist_tlv */
     HTT_STATS_TX_PDEV_PENDING_SEQ_CNT_IN_TXQ_HIST_TAG        = 217, /* htt_stats_tx_pdev_pending_seq_cnt_in_txq_hist_tlv */
@@ -879,8 +891,8 @@ typedef enum {
     HTT_STATS_TX_SELFGEN_BN_ERR_TAG                 = 220, /* htt_stats_tx_selfgen_bn_err_tlv, TOPIC=advanced */
     HTT_STATS_TX_SELFGEN_BN_TAG                     = 221, /* htt_stats_tx_selfgen_bn_tlv, TOPIC=advanced */
     HTT_STATS_TX_SELFGEN_BN_SCHED_STATUS_TAG        = 222, /* htt_stats_tx_selfgen_bn_sched_status_tlv, TOPIC=advanced */
-    HTT_STATS_TX_PDEV_BN_DL_MU_OFDMA_STATS_TAG      = 223, /* htt_stats_tx_pdev_bn_dl_mu_ofdma_tlv, TOPIC=advanced */
-    HTT_STATS_TX_PDEV_BN_UL_MU_OFDMA_STATS_TAG      = 224, /* htt_stats_tx_pdev_bn_ul_mu_ofdma_tlv, TOPIC=advanced */
+    HTT_STATS_TX_PDEV_BN_DL_MU_OFDMA_STATS_TAG      = 223, /* htt_stats_tx_pdev_bn_dl_mu_ofdma_stats_tlv, TOPIC=advanced */
+    HTT_STATS_TX_PDEV_BN_UL_MU_OFDMA_STATS_TAG      = 224, /* htt_stats_tx_pdev_bn_ul_mu_ofdma_stats_tlv, TOPIC=advanced */
     HTT_STATS_RX_PEER_TID_REO_QUEUE_BA_TAG          = 225, /* htt_stats_rx_peer_tid_reo_queue_ba_tlv */
     HTT_STATS_TXBF_OFDMA_BN_NDPA_TAG                = 226, /* htt_stats_txbf_ofdma_bn_ndpa_tlv */
     HTT_STATS_TXBF_OFDMA_BN_NDP_TAG                 = 227, /* htt_stats_txbf_ofdma_bn_ndp_tlv */
@@ -914,16 +926,17 @@ typedef enum {
     HTT_STATS_REGDB_CTRY_TAG                        = 247, /* htt_stats_regdb_ctry_tlv */
     HTT_STATS_REGDB_REGDOMAIN_TAG                   = 248, /* htt_stats_regdb_regdomain_tlv */
     HTT_STATS_REG_6G_TAG                            = 249, /* htt_stats_reg_6g_tlv*/
-    HTT_STATS_REG_6G_CH_PWR_INFO_TAG                = 250, /* htt_stats_reg_6g_ch_power_info_tlv*/
+    HTT_STATS_REG_6G_CH_PWR_INFO_TAG                = 250, /* htt_stats_reg_6g_ch_power_info_tlv */
     HTT_STATS_REG_6G_OOBE_TAG                       = 251, /* htt_stats_reg_6g_oobe_tlv*/
     HTT_STATS_TX_SELFGEN_RESP_FRAME_STATS_TAG       = 252, /* htt_stats_tx_selfgen_resp_frame_stats_tlv */
     HTT_STATS_DPD_HALPHY_TAG                        = 253, /* htt_stats_dpd_halphy_tlv */
     HTT_STATS_DPD_HW_CAL_PARAMS_TAG                 = 254, /* htt_stats_dpd_hw_cal_params_tlv */
     HTT_STATS_DPD_HW_CAL_RESULTS_TAG                = 255, /* htt_stats_dpd_hw_cal_results_tlv */
     HTT_STATS_TX_PDEV_TXOP_DUR_TAG                  = 256, /* htt_stats_tx_pdev_txop_dur_tlv */
-    HTT_STATS_TXQ_COMBINED_SEQ_STATE_TAG            = 257, /* htt_stats_sched_txq_combined_seq_state_tlv */
+    HTT_STATS_TXQ_COMBINED_SEQ_STATE_TAG            = 257, /* htt_stats_txq_combined_seq_state_tlv */
     HTT_STATS_CTL_TAG                               = 258, /* htt_stats_ctl_tlv */
     HTT_STATS_ENHANCED_CTL_TAG                      = 259, /* htt_stats_enhanced_ctl_tlv */
+    HTT_STATS_NPCA_TAG                              = 260, /* htt_stats_npca_tlv */
 
     HTT_STATS_MAX_TAG,
 } htt_stats_tlv_tag_t;
@@ -2945,6 +2958,231 @@ PREPACK struct htt_tx_tcl_metadata_v2 {
 /*------------------------------------------------------------------
  *                 End V2 Version of TCL Data Command
  *-----------------------------------------------------------------*/
+
+
+/*------------------------------------------------------------------
+ *                 V3 Version of TCL Data Command
+ * V3 Version to support peer_id, vdev_id, svc_class_id and
+ * MLO global_seq all flavours of TCL Data Cmd. same fields as V2,
+ * but the ordering of the fields changes.
+ *-----------------------------------------------------------------*/
+
+typedef struct {
+    A_UINT32
+        valid_htt_ext: 1, /* If set, tcl_exit_base->host_meta_info is valid */
+        vdev_id:       8,
+        pdev_id:       2,
+        host_inspected:1,
+        rsvd:          2,
+        /* type: vdev_id based or peer_id or svc_id or global seq based */
+        type:          2,
+        /* padding: these 16 bits cannot be used by FW for the tcl command */
+        padding:      16;
+} htt_tx_tcl_vdev_metadata_v3;
+
+typedef struct {
+    A_UINT32
+        valid_htt_ext: 1, /* If set, tcl_exit_base->host_meta_info is valid */
+        peer_id:       13,
+        /* type: vdev_id based or peer_id or svc_id or global seq based */
+        type:          2,
+        /* padding: these 16 bits cannot be used by FW for the tcl command */
+        padding:       16;
+} htt_tx_tcl_peer_metadata_v3;
+
+typedef struct {
+    A_UINT32
+        valid_htt_ext: 1, /* If set, tcl_exit_base->host_meta_info is valid */
+        svc_class_id:  8,
+        /* ast_index:
+         * Indicates to firmware the AST index to be used for AST Override
+         */
+        ast_index:     3,
+        rsvd:          2,
+        /* type: vdev_id based or peer_id or svc_id or global seq based */
+        type:          2,
+        /* padding: these 16 bits cannot be used by FW for the tcl command */
+        padding:      16;
+} htt_tx_tcl_svc_class_id_metadata_v3;
+
+typedef struct {
+    A_UINT32
+        global_seq_no: 12,
+        host_inspected: 1,
+        htt_ext_present:1,
+        /* type: vdev_id based or peer_id or svc_id or global seq based */
+        type:           2,
+        /* padding: these 16 bits cannot be used by FW for the tcl command */
+        padding:       16;
+} htt_tx_tcl_global_seq_metadata_v3;
+
+PREPACK struct htt_tx_tcl_metadata_v3 {
+    union {
+        htt_tx_tcl_vdev_metadata_v3 vdev_meta_v3;
+        htt_tx_tcl_peer_metadata_v3 peer_meta_v3;
+        htt_tx_tcl_svc_class_id_metadata_v3 svc_class_id_meta_v3;
+        htt_tx_tcl_global_seq_metadata_v3 global_seq_meta_v3;
+    };
+} POSTPACK;
+
+/* =====================================================================
+ * Common fields
+ * ===================================================================== */
+
+/* type field */
+#define HTT_TX_TCL_METADATA_TYPE_V3_M                  0x0000C000
+#define HTT_TX_TCL_METADATA_TYPE_V3_S                  14
+
+/* valid htt ext (used by VDEV / PEER / SVC metadata) */
+#define HTT_TX_TCL_METADATA_V3_VALID_HTT_EXT_ID_M      0x00000001
+#define HTT_TX_TCL_METADATA_V3_VALID_HTT_EXT_ID_S      0
+
+
+/* =====================================================================
+ * VDEV V3 metadata
+ * ===================================================================== */
+
+#define HTT_TX_TCL_METADATA_V3_VDEV_ID_M               0x000001FE
+#define HTT_TX_TCL_METADATA_V3_VDEV_ID_S               1
+
+#define HTT_TX_TCL_METADATA_V3_PDEV_ID_M               0x00000600
+#define HTT_TX_TCL_METADATA_V3_PDEV_ID_S               9
+
+#define HTT_TX_TCL_METADATA_V3_HOST_INSPECTED_M        0x00000800
+#define HTT_TX_TCL_METADATA_V3_HOST_INSPECTED_S        11
+
+
+/* =====================================================================
+ * PEER V3 metadata
+ * ===================================================================== */
+
+#define HTT_TX_TCL_METADATA_V3_PEER_ID_M               0x00003FFE
+#define HTT_TX_TCL_METADATA_V3_PEER_ID_S               1
+
+
+/* =====================================================================
+ * SVC CLASS ID metadata
+ * ===================================================================== */
+
+#define HTT_TX_TCL_METADATA_V3_SVC_CLASS_ID_M             0x000001FE
+#define HTT_TX_TCL_METADATA_V3_SVC_CLASS_ID_S             1
+
+#define HTT_TX_TCL_METADATA_AST_INDEX_M                   0x00000E00
+#define HTT_TX_TCL_METADATA_AST_INDEX_S                   9
+
+
+/* =====================================================================
+ * Global Sequence Number metadata
+ * ===================================================================== */
+
+#define HTT_TX_TCL_METADATA_V3_GLBL_SEQ_NO_M              0x00000FFF
+#define HTT_TX_TCL_METADATA_V3_GLBL_SEQ_NO_S              0
+
+#define HTT_TX_TCL_METADATA_V3_GLBL_SEQ_HOST_INSPECTED_M  0x00001000
+#define HTT_TX_TCL_METADATA_V3_GLBL_SEQ_HOST_INSPECTED_S  12
+
+#define HTT_TX_TCL_METADATA_V3_GLBL_SEQ_HTT_EXT_PRESENT_M 0x00002000
+#define HTT_TX_TCL_METADATA_V3_GLBL_SEQ_HTT_EXT_PRESENT_S 13
+
+/*----- Get and Set V3 type field in Vdev, Peer, Svc_Class_Id, Global_seq_no */
+#define HTT_TX_TCL_METADATA_TYPE_V3_GET(_var) \
+    (((_var) & HTT_TX_TCL_METADATA_TYPE_V3_M) >> \
+    HTT_TX_TCL_METADATA_TYPE_V3_S)
+#define HTT_TX_TCL_METADATA_TYPE_V3_SET(_var, _val) \
+     do { \
+         HTT_CHECK_SET_VAL(HTT_TX_TCL_METADATA_TYPE_V3, _val); \
+         ((_var) |= ((_val) << HTT_TX_TCL_METADATA_TYPE_V3_S)); \
+     } while (0)
+
+#define HTT_TX_TCL_METADATA_V3_VALID_HTT_GET(_var) \
+    (((_var) & HTT_TX_TCL_METADATA_V3_VALID_HTT_EXT_ID_M) >> \
+    HTT_TX_TCL_METADATA_V3_VALID_HTT_EXT_ID_S)
+#define HTT_TX_TCL_METADATA_V3_VALID_HTT_SET(_var, _val) \
+     do { \
+         HTT_CHECK_SET_VAL(HTT_TX_TCL_METADATA_V3_VALID_HTT_EXT_ID, _val); \
+         ((_var) |= ((_val) << HTT_TX_TCL_METADATA_V3_VALID_HTT_EXT_ID_S)); \
+     } while (0)
+
+/*----- Get and Set V3 type field in Vdev meta fields ----*/
+#define HTT_TX_TCL_METADATA_V3_VDEV_ID_GET(_var) \
+    (((_var) & HTT_TX_TCL_METADATA_V3_VDEV_ID_M) >> \
+    HTT_TX_TCL_METADATA_V3_VDEV_ID_S)
+#define HTT_TX_TCL_METADATA_V3_VDEV_ID_SET(_var, _val) \
+     do { \
+         HTT_CHECK_SET_VAL(HTT_TX_TCL_METADATA_V3_VDEV_ID, _val); \
+         ((_var) |= ((_val) << HTT_TX_TCL_METADATA_V3_VDEV_ID_S)); \
+     } while (0)
+
+#define HTT_TX_TCL_METADATA_V3_PDEV_ID_GET(_var) \
+    (((_var) & HTT_TX_TCL_METADATA_V3_PDEV_ID_M) >> \
+    HTT_TX_TCL_METADATA_V3_PDEV_ID_S)
+#define HTT_TX_TCL_METADATA_V3_PDEV_ID_SET(_var, _val) \
+     do { \
+         HTT_CHECK_SET_VAL(HTT_TX_TCL_METADATA_V3_PDEV_ID, _val); \
+         ((_var) |= ((_val) << HTT_TX_TCL_METADATA_V3_PDEV_ID_S)); \
+     } while (0)
+
+#define HTT_TX_TCL_METADATA_V3_HOST_INSPECTED_GET(_var) \
+    (((_var) & HTT_TX_TCL_METADATA_V3_HOST_INSPECTED_M) >> \
+    HTT_TX_TCL_METADATA_V3_HOST_INSPECTED_S)
+#define HTT_TX_TCL_METADATA_V3_HOST_INSPECTED_SET(_var, _val) \
+     do { \
+         HTT_CHECK_SET_VAL(HTT_TX_TCL_METADATA_V3_HOST_INSPECTED, _val); \
+         ((_var) |= ((_val) << HTT_TX_TCL_METADATA_V3_HOST_INSPECTED_S)); \
+     } while (0)
+
+/*----- Get and Set V3 type field in Peer meta fields ----*/
+#define HTT_TX_TCL_METADATA_V3_PEER_ID_GET(_var) \
+    (((_var) & HTT_TX_TCL_METADATA_V3_PEER_ID_M) >> \
+    HTT_TX_TCL_METADATA_V3_PEER_ID_S)
+#define HTT_TX_TCL_METADATA_V3_PEER_ID_SET(_var, _val) \
+     do { \
+         HTT_CHECK_SET_VAL(HTT_TX_TCL_METADATA_V3_PEER_ID, _val); \
+         ((_var) |= ((_val) << HTT_TX_TCL_METADATA_V3_PEER_ID_S)); \
+     } while (0)
+
+/*----- Get and Set V3 type field in Service Class fields ----*/
+#define HTT_TX_TCL_METADATA_V3_SVC_CLASS_ID_GET(_var) \
+    (((_var) & HTT_TX_TCL_METADATA_V3_SVC_CLASS_ID_M) >> \
+    HTT_TX_TCL_METADATA_V3_SVC_CLASS_ID_S)
+#define HTT_TX_TCL_METADATA_V3_SVC_CLASS_ID_SET(_var, _val) \
+     do { \
+         HTT_CHECK_SET_VAL(HTT_TX_TCL_METADATA_V3_SVC_CLASS_ID, _val); \
+         ((_var) |= ((_val) << HTT_TX_TCL_METADATA_V3_SVC_CLASS_ID_S)); \
+     } while (0)
+
+/*----- Get and Set V3 type field in Global sequence fields ----*/
+#define HTT_TX_TCL_METADATA_V3_GLBL_SEQ_HOST_INSPECTED_GET(_var) \
+    (((_var) & HTT_TX_TCL_METADATA_V3_GLBL_SEQ_HOST_INSPECTED_M) >> \
+    HTT_TX_TCL_METADATA_V3_GLBL_SEQ_HOST_INSPECTED_S)
+#define HTT_TX_TCL_METADATA_V3_GLBL_SEQ_HOST_INSPECTED_SET(_var, _val) \
+     do { \
+         HTT_CHECK_SET_VAL(HTT_TX_TCL_METADATA_V3_GLBL_SEQ_HOST_INSPECTED, _val); \
+         ((_var) |= ((_val) << HTT_TX_TCL_METADATA_V3_GLBL_SEQ_HOST_INSPECTED_S)); \
+     } while (0)
+
+#define HTT_TX_TCL_METADATA_V3_GLBL_SEQ_NO_GET(_var) \
+    (((_var) & HTT_TX_TCL_METADATA_V3_GLBL_SEQ_NO_M) >> \
+    HTT_TX_TCL_METADATA_V3_GLBL_SEQ_NO_S)
+#define HTT_TX_TCL_METADATA_V3_GLBL_SEQ_NO_SET(_var, _val) \
+     do { \
+         HTT_CHECK_SET_VAL(HTT_TX_TCL_METADATA_V3_GLBL_SEQ_NO, _val); \
+         ((_var) |= ((_val) << HTT_TX_TCL_METADATA_V3_GLBL_SEQ_NO_S)); \
+     } while (0)
+
+#define HTT_TX_TCL_METADATA_V3_GLBL_SEQ_HTT_EXT_PRESENT_GET(_var) \
+    (((_var) & HTT_TX_TCL_METADATA_V3_GLBL_SEQ_HTT_EXT_PRESENT_M) >> \
+    HTT_TX_TCL_METADATA_V3_GLBL_SEQ_HTT_EXT_PRESENT_S)
+#define HTT_TX_TCL_METADATA_V3_GLBL_SEQ_HTT_EXT_PRESENT_SET(_var, _val) \
+     do { \
+         HTT_CHECK_SET_VAL(HTT_TX_TCL_METADATA_V3_GLBL_SEQ_HTT_EXT_PRESENT, _val); \
+         ((_var) |= ((_val) << HTT_TX_TCL_METADATA_V3_GLBL_SEQ_HTT_EXT_PRESENT_S)); \
+     } while (0)
+
+/*------------------------------------------------------------------
+ *                 End V3 Version of TCL Data Command
+ *-----------------------------------------------------------------*/
+
 
 typedef enum {
    HTT_TX_FW2WBM_TX_STATUS_OK,
@@ -5997,7 +6235,11 @@ enum htt_srng_ring_id {
  *                    newer packet_type_enable_data_flags_* are valid or not
  *                    If not set, will use pkt_type_enable_flags for both status
  *                    and full pkt buffer configuration.
- *          b'30:31 - rsvd1:  reserved for future use
+ *          b'30    - is_monitor_mode: specify whether monitor mode is enabled.
+ *                    Helpful to configure monitor-mode related filters.
+ *                    These filters cause throughput dip if enabled in
+ *                    non-monitor mode.
+ *          b'31    - rsvd1:  reserved for future use
  * dword1 - b'0:15  - ring_buffer_size: size of bufferes referenced by rx ring,
  *                    in byte units.
  *                    Valid only for HW_TO_SW_RING and SW_TO_HW_RING
@@ -6214,7 +6456,8 @@ PREPACK struct htt_rx_ring_selection_cfg_t {
              drop_thresh_valid: 1,
              rx_mon_global_en:  1,
              packet_type_enable_data: 1,
-             rsvd1:             2;
+             is_monitor_mode:   1,
+             rsvd1:             1;
     A_UINT32 ring_buffer_size: 16,
              config_length_mgmt:3,
              config_length_ctrl:3,
@@ -6416,6 +6659,18 @@ enum htt_reg_write_selection {
                 HTT_CHECK_SET_VAL(HTT_RX_RING_SELECTION_CFG_PACKET_TYPE_ENABLE_DATA, _val); \
                 ((_var) |= ((_val) << HTT_RX_RING_SELECTION_CFG_PACKET_TYPE_ENABLE_DATA_S)); \
             } while (0)
+
+#define HTT_RX_RING_SELECTION_CFG_IS_MONITOR_MODE_M    0x40000000
+#define HTT_RX_RING_SELECTION_CFG_IS_MONITOR_MODE_S           30
+#define HTT_RX_RING_SELECTION_CFG_IS_MONITOR_MODE_GET(_var) \
+            (((_var) & HTT_RX_RING_SELECTION_CFG_IS_MONITOR_MODE_M) >> \
+                    HTT_RX_RING_SELECTION_CFG_IS_MONITOR_MODE_S)
+#define HTT_RX_RING_SELECTION_CFG_IS_MONITOR_MODE_SET(_var, _val) \
+            do { \
+                HTT_CHECK_SET_VAL(HTT_RX_RING_SELECTION_CFG_IS_MONITOR_MODE, _val); \
+                ((_var) |= ((_val) << HTT_RX_RING_SELECTION_CFG_IS_MONITOR_MODE_S)); \
+            } while (0)
+
 
 #define HTT_RX_RING_SELECTION_CFG_RING_BUFFER_SIZE_M           0x0000ffff
 #define HTT_RX_RING_SELECTION_CFG_RING_BUFFER_SIZE_S           0
@@ -22007,14 +22262,14 @@ PREPACK struct htt_rx_peer_metadata_v1 {
  */
 PREPACK struct htt_rx_peer_metadata_v1a {
     A_UINT32
-        peer_id:         13,
-        ml_peer_valid:   1,
-        vdev_id:         8,
-        logical_link_id: 4,
-        chip_id:         3,
-        qdata_refill:    1,
-        passthru_pkt:    1,
-        reserved2:       1;
+        peer_id:           13,
+        ml_peer_valid:     1,
+        vdev_id:           8,
+        logical_link_id:   4,
+        chip_id:           3,
+        qdata_refill:      1,
+        passthru_pkt:      1,
+        qdata_consent_pkt: 1;
 } POSTPACK;
 
 #define HTT_RX_PEER_META_DATA_V1A_PEER_ID_S    0
@@ -22092,6 +22347,17 @@ PREPACK struct htt_rx_peer_metadata_v1a {
     do {                                             \
         HTT_CHECK_SET_VAL(HTT_RX_PEER_META_DATA_V1A_PASSTHRU_PKT, _val);  \
         ((_var) |= ((_val) << HTT_RX_PEER_META_DATA_V1A_PASSTHRU_PKT_S)); \
+    } while (0)
+
+#define HTT_RX_PEER_META_DATA_V1A_QDATA_CONSENT_PKT_S    31
+#define HTT_RX_PEER_META_DATA_V1A_QDATA_CONSENT_PKT_M    0x80000000
+#define HTT_RX_PEER_META_DATA_V1A_QDATA_CONSENT_PKT_GET(_var) \
+    (((_var) & HTT_RX_PEER_META_DATA_V1A_QDATA_CONSENT_PKT_M) >> HTT_RX_PEER_META_DATA_V1A_QDATA_CONSENT_PKT_S)
+
+#define HTT_RX_PEER_META_DATA_V1A_QDATA_CONSENT_PKT_SET(_var, _val) \
+    do { \
+        HTT_CHECK_SET_VAL(HTT_RX_PEER_META_DATA_V1A_QDATA_CONSENT_PKT, _val);  \
+        ((_var) |= ((_val) << HTT_RX_PEER_META_DATA_V1A_QDATA_CONSENT_PKT_S)); \
     } while (0)
 
 
@@ -22201,14 +22467,15 @@ PREPACK struct htt_rx_peer_metadata_v1b {
  */
 PREPACK struct htt_rx_peer_metadata_v2 {
     A_UINT32
-        peer_id:          5,
-        ml_peer_valid:    1,
-        vdev_id:          3,
-        logical_link_id:  3,
-        qdata_refill:     1,
-        peer_session_id:  8,
-        passthru_pkt:     1,
-        reserved:        10;
+        peer_id:           5,
+        ml_peer_valid:     1,
+        vdev_id:           3,
+        logical_link_id:   3,
+        qdata_refill:      1,
+        peer_session_id:   8,
+        passthru_pkt:      1,
+        qdata_consent_pkt: 1,
+        reserved:          9;
 } POSTPACK;
 
 #define HTT_RX_PEER_META_DATA_V2_PEER_ID_S 0
@@ -22294,6 +22561,17 @@ PREPACK struct htt_rx_peer_metadata_v2 {
         ((_var) |= ((_val) << HTT_RX_PEER_META_DATA_V2_PASSTHRU_PKT_S)); \
     } while (0)
 
+#define HTT_RX_PEER_META_DATA_V2_QDATA_CONSENT_PKT_S 22
+#define HTT_RX_PEER_META_DATA_V2_QDATA_CONSENT_PKT_M 0x00400000
+#define HTT_RX_PEER_META_DATA_V2_QDATA_CONSENT_PKT_GET(_var) \
+    (((_var) & HTT_RX_PEER_META_DATA_V2_QDATA_CONSENT_PKT_M) >> HTT_RX_PEER_META_DATA_V2_QDATA_CONSENT_PKT_S)
+
+#define HTT_RX_PEER_META_DATA_V2_QDATA_CONSENT_PKT_SET(_var, _val) \
+    do { \
+        HTT_CHECK_SET_VAL(HTT_RX_PEER_META_DATA_V2_QDATA_CONSENT_PKT, _val);  \
+        ((_var) |= ((_val) << HTT_RX_PEER_META_DATA_V2_QDATA_CONSENT_PKT_S)); \
+    } while (0)
+
 
 /* generic variables for masks and shifts for various fields */
 extern A_UINT32 HTT_RX_PEER_META_DATA_PEER_ID_S;
@@ -22332,6 +22610,9 @@ extern void (*HTT_RX_PEER_META_DATA_PEER_SESSION_ID_SET) (A_UINT32 *var, A_UINT3
 
 extern A_UINT32 (*HTT_RX_PEER_META_DATA_DECAP_TYPE_GET) (A_UINT32 var);
 extern void (*HTT_RX_PEER_META_DATA_DECAP_TYPE_SET) (A_UINT32 *var, A_UINT32 val);
+
+extern A_UINT32 (*HTT_RX_PEER_META_DATA_PASSTHRU_PKT_GET) (A_UINT32 var);
+extern void (*HTT_RX_PEER_META_DATA_PASSTHRU_PKT_SET) (A_UINT32 *var, A_UINT32 val);
 
 
 /*

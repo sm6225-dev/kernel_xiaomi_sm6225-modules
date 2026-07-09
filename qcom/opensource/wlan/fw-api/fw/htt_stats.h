@@ -948,6 +948,8 @@ enum htt_dbg_ext_stats_type {
      */
     HTT_DBG_EXT_STATS_DPD = 85,
 
+    HTT_DBG_EXT_STATS_NPCA = 86,
+
 
     /* keep this last */
     HTT_DBG_NUM_EXT_STATS = 256,
@@ -1621,6 +1623,11 @@ typedef struct {
     A_UINT32 mu_mimo_num_seq_posted[HTT_STATS_NUM_NR_BINS];
 
     A_UINT32 mu_mimo_num_ppdu_posted_per_burst[HTT_STATS_MAX_NUM_MU_PPDU_PER_BURST_WORDS];
+    /**
+     * Wi-Fi version identifier to differentiate stats while printing
+     * (contains enum HTT_RX_TX_PDEV_STATS_WIFI_VERSION value).
+     */
+    A_UINT32 wifi_version;
 } htt_stats_mu_ppdu_dist_tlv;
 /* preserve old name alias for new name consistent with the tag name */
 typedef htt_stats_mu_ppdu_dist_tlv htt_pdev_mu_ppdu_dist_tlv_v;
@@ -3905,6 +3912,11 @@ typedef struct {
     A_UINT32 standalone_be_ulmumimo_trigger_tried[HTT_NUM_AC_WMM];
     /** 11BE EHT MU Standalone UL MU-MIMO Basic Trigger completed with error(s) */
     A_UINT32 standalone_be_ulmumimo_trigger_err[HTT_NUM_AC_WMM];
+    /**
+     * Wi-Fi version identifier to differentiate stats while printing
+     * (contains enum HTT_RX_TX_PDEV_STATS_WIFI_VERSION value).
+     */
+    A_UINT32 wifi_version;
 } htt_stats_tx_selfgen_be_stats_tlv;
 /* preserve old name alias for new name consistent with the tag name */
 typedef htt_stats_tx_selfgen_be_stats_tlv htt_tx_selfgen_be_stats_tlv;
@@ -3970,6 +3982,9 @@ typedef struct {
     A_UINT32 sta_dps_bn_bsr_trigger_err[HTT_NUM_AC_WMM];
     /** 11bn UHR MU RTS trigger to DPS client completed with errors(s) */
     A_UINT32 sta_dps_bn_mu_rts_trigger_err[HTT_NUM_AC_WMM];
+
+    /** 11BN UHR UL OFDMA RU allocation mode - trigger error count */
+    A_UINT32 bn_basic_trig_ru_alloc_mode_err[HTT_BN_UL_OFDMA_NUM_RU_ALLOC_MODES];
 } htt_stats_tx_selfgen_bn_tlv;
 
 typedef struct { /* DEPRECATED */
@@ -4713,6 +4728,11 @@ typedef struct {
     A_UINT32 be_mu_rts_trigger_blocked;
     /** 11BE EHT MU BSR Trigger frame blocked due to partner link TX/RX(eMLSR) */
     A_UINT32 be_bsr_trigger_blocked;
+    /**
+     * Wi-Fi version identifier to differentiate stats while printing
+     * (contains enum HTT_RX_TX_PDEV_STATS_WIFI_VERSION value).
+     */
+    A_UINT32 wifi_version;
 } htt_stats_tx_selfgen_be_err_stats_tlv;
 /* preserve old name alias for new name consistent with the tag name */
 typedef htt_stats_tx_selfgen_be_err_stats_tlv htt_tx_selfgen_be_err_stats_tlv;
@@ -4873,6 +4893,11 @@ typedef struct {
     A_UINT32 be_ulmumimo_trig_sch_status[HTT_TX_PDEV_STATS_NUM_TX_ERR_STATUS];
     /** 11BE EHT UL MUMIMO Basic Trigger scheduler error code */
     A_UINT32 be_ulmumimo_trig_sch_flag_err[HTT_TX_SELFGEN_NUM_SCH_TSFLAG_ERROR_STATS];
+    /**
+     * Wi-Fi version identifier to differentiate stats while printing
+     * (contains enum HTT_RX_TX_PDEV_STATS_WIFI_VERSION value).
+     */
+    A_UINT32 wifi_version;
 } htt_stats_tx_selfgen_be_sched_status_stats_tlv;
 /* preserve old name alias for new name consistent with the tag name */
 typedef htt_stats_tx_selfgen_be_sched_status_stats_tlv
@@ -4981,6 +5006,11 @@ typedef struct {
     A_UINT32 be_mu_mimo_sch_posted_per_grp_sz[HTT_TX_PDEV_STATS_NUM_BE_MUMIMO_USER_STATS];
     /** Number of 11AC DL MU MIMO schedules posted per group size (4-7) */
     A_UINT32 ac_mu_mimo_sch_posted_per_grp_sz_ext[HTT_TX_PDEV_STATS_NUM_AC_MUMIMO_USER_STATS];
+    /**
+     * Wi-Fi version identifier to differentiate stats while printing
+     * (contains enum HTT_RX_TX_PDEV_STATS_WIFI_VERSION value).
+     */
+    A_UINT32 wifi_version;
 } htt_stats_tx_pdev_mu_mimo_stats_tlv;
 /* preserve old name alias for new name consistent with the tag name */
 typedef htt_stats_tx_pdev_mu_mimo_stats_tlv htt_tx_pdev_mu_mimo_sch_stats_tlv;
@@ -5040,6 +5070,11 @@ typedef struct {
     A_UINT32 be_mu_mimo_sch_posted_per_grp_sz[HTT_TX_PDEV_STATS_NUM_BE_MUMIMO_USER_STATS];
     /** Number of 11AC DL MU MIMO schedules posted per group size (4 - 7)*/
     A_UINT32 ac_mu_mimo_sch_posted_per_grp_sz_ext[HTT_TX_PDEV_STATS_NUM_AC_MUMIMO_USER_STATS];
+    /**
+     * Wi-Fi version identifier to differentiate stats while printing
+     * (contains enum HTT_RX_TX_PDEV_STATS_WIFI_VERSION value).
+     */
+    A_UINT32 wifi_version;
 } htt_stats_tx_pdev_dl_mu_mimo_stats_tlv;
 /* preserve old name alias for new name consistent with the tag name */
 typedef htt_stats_tx_pdev_dl_mu_mimo_stats_tlv
@@ -5067,7 +5102,10 @@ typedef struct {
     htt_tlv_hdr_t tlv_hdr;
     /** Represents the count for 11BN DL MU OFDMA sequences */
     A_UINT32 bn_mu_ofdma_sch_nusers[HTT_TX_PDEV_STATS_NUM_BN_OFDMA_USER_STATS];
-} htt_stats_tx_pdev_bn_dl_mu_ofdma_tlv;
+} htt_stats_tx_pdev_bn_dl_mu_ofdma_stats_tlv;
+/* preserve old name alias for new name consistent with the tag name */
+typedef htt_stats_tx_pdev_bn_dl_mu_ofdma_stats_tlv
+    htt_stats_tx_pdev_bn_dl_mu_ofdma_tlv;
 
 typedef struct {
     htt_tlv_hdr_t tlv_hdr;
@@ -5132,7 +5170,10 @@ typedef struct {
     /**
      * TODO_BORON_OFDMA : Add array for BN_BRP number of users
      */
-} htt_stats_tx_pdev_bn_ul_mu_ofdma_tlv;
+} htt_stats_tx_pdev_bn_ul_mu_ofdma_stats_tlv;
+/* preserve old name alias for new name consistent with the tag name */
+typedef htt_stats_tx_pdev_bn_ul_mu_ofdma_stats_tlv
+    htt_stats_tx_pdev_bn_ul_mu_ofdma_tlv;
 
 typedef struct {
     htt_tlv_hdr_t tlv_hdr;
@@ -5247,6 +5288,11 @@ typedef struct {
     A_UINT32 user_index;
     /** HTT_STATS_TX_SCHED_MODE_xxx */
     A_UINT32 tx_sched_mode;
+    /**
+     * Wi-Fi version identifier to differentiate stats while printing
+     * (contains enum HTT_RX_TX_PDEV_STATS_WIFI_VERSION value).
+     */
+    A_UINT32 wifi_version;
 } htt_stats_tx_pdev_mpdu_stats_tlv;
 /* preserve old name alias for new name consistent with the tag name */
 typedef htt_stats_tx_pdev_mpdu_stats_tlv htt_tx_pdev_mpdu_stats_tlv;
@@ -5323,6 +5369,17 @@ typedef struct {
     htt_tlv_hdr_t tlv_hdr;
     A_UINT32 htt_stats_type;
 } htt_stats_error_tlv_v;
+/* Multiple TLV tag values
+ * (HTT_STATS_UNSUPPORTED_ERROR_STATS_TAG,
+ * HTT_STATS_UNAVAILABLE_ERROR_STATS_TAG)
+ * correspond to this htt_stats_error_tlv_v struct.
+ * Provide aliases that have the expected names
+ * that are consistent with the TLV tag enum names.
+ */
+typedef htt_stats_error_tlv_v
+    htt_stats_unsupported_error_stats_tlv;
+typedef htt_stats_error_tlv_v
+    htt_stats_unavailable_error_stats_tlv;
 
 typedef enum {
     HTT_SCHED_TID_SKIP_SCHED_MASK_DISABLED = 0, /* Skip the tid when WAL_TID_DISABLE_TX_SCHED_MASK is true                                       */
@@ -5472,7 +5529,10 @@ typedef struct {
      * Indexed by htt_sched_txq_combined_seq_status_tlv_enum.
      */
     HTT_STATS_VAR_LEN_ARRAY1(A_UINT32, combined_seq_state);
-} htt_stats_sched_txq_combined_seq_state_tlv;
+} htt_stats_txq_combined_seq_state_tlv;
+/* preserve old name alias for new name consistent with the tag name */
+typedef htt_stats_txq_combined_seq_state_tlv
+     htt_stats_sched_txq_combined_seq_state_tlv;
 
 typedef struct {
     htt_tlv_hdr_t tlv_hdr;
@@ -7218,6 +7278,11 @@ typedef struct {
     A_UINT32 be_mu_mimo_tx_gi[HTT_TX_PDEV_STATS_NUM_GI_COUNTERS][HTT_TX_PDEV_STATS_NUM_BE_MCS_COUNTERS];
     /** 11BE DL MU MIMO LDPC count */
     A_UINT32 be_mu_mimo_tx_ldpc;
+    /**
+     * Wi-Fi version identifier to differentiate stats while printing
+     * (contains enum HTT_RX_TX_PDEV_STATS_WIFI_VERSION value).
+     */
+    A_UINT32 wifi_version;
 } htt_stats_tx_pdev_be_rate_stats_tlv;
 /* preserve old name alias for new name consistent with the tag name */
 typedef htt_stats_tx_pdev_be_rate_stats_tlv htt_tx_pdev_rate_stats_be_tlv;
@@ -10959,7 +11024,10 @@ typedef struct {
     A_UINT32 mu_grp_candidate_skip_1ss
         [HTT_TX_PDEV_STATS_NUM_UL_MUMIMO_USER_STATS]
         [HTT_STATS_CANDIDATE_SKIP_REASON_MAX];
-} htt_stats_pdev_ulmumimo_grp_stats_tlv;
+} htt_stats_pdev_ul_mumimo_grp_stats_tlv;
+/* preserve old name alias for new name consistent with the tag name */
+typedef htt_stats_pdev_ul_mumimo_grp_stats_tlv
+    htt_stats_pdev_ulmumimo_grp_stats_tlv;
 
 typedef struct {
     htt_tlv_hdr_t tlv_hdr;
@@ -10970,7 +11038,10 @@ typedef struct {
     A_UINT32 trig_bitmap_fail_cnt;
     /* Num of times peer denylisted due to trigger consecutive failure */
     A_UINT32 trig_consecutive_fail_cnt;
-} htt_stats_pdev_ulmumimo_denylist_stats_tlv;
+} htt_stats_pdev_ul_mumimo_denylist_stats_tlv;
+/* preserve old name alias for new name consistent with the tag name */
+typedef htt_stats_pdev_ul_mumimo_denylist_stats_tlv
+    htt_stats_pdev_ulmumimo_denylist_stats_tlv;
 
 #define HTT_STATS_SEQ_EFFICIENCY_HISTOGRAM 10
 typedef struct {
@@ -11007,7 +11078,10 @@ typedef struct {
      * for low traffic classification
      */
     A_UINT32 num_terminate_seq_low_traffic;
-} htt_stats_pdev_ulmumimo_seq_term_stats_tlv;
+} htt_stats_pdev_ul_mumimo_seq_term_stats_tlv;
+/* preserve old name alias for new name consistent with the tag name */
+typedef htt_stats_pdev_ul_mumimo_seq_term_stats_tlv
+    htt_stats_pdev_ulmumimo_seq_term_stats_tlv;
 
 #define HTT_STATS_MAX_ULMUMIMO_TRIGGERS 6
 #define HTT_STATS_TXOP_HISTOGRAM_BINS 24
@@ -11035,7 +11109,10 @@ typedef struct {
      * Checks for 8 eligible instances of ULMUMIMO in the past 32 instances.
      */
     A_UINT32 history_ineligibility;
-} htt_stats_pdev_ulmumimo_hist_ineligibility_tlv;
+} htt_stats_pdev_ul_mumimo_hist_ineligibility_tlv;
+/* preserve old name alias for new name consistent with the tag name */
+typedef htt_stats_pdev_ul_mumimo_hist_ineligibility_tlv
+    htt_stats_pdev_ulmumimo_hist_ineligibility_tlv;
 
 
 /* RTT VREG MASK */
@@ -12752,11 +12829,9 @@ typedef struct {
                  is_verbose_enabled:        1, /* bit 12 */
                  is_dyn_ant_sel_supported:  1, /* bit 13 */
                  is_dfs_punc_enabled:       1, /* bit 14 */
-                 is_ctl_blob_downloaded:    1, /* bit 15 */
-                 dpd_pow_bo_status:         1, /* bit 16 */
-                 is_eeprom_compressed:      1, /* bit 17 */
-                 is_ctl_table_loaded:       1, /* bit 18 */
-                 reserved: 13; /* bits 31:19 */
+                 dpd_pow_bo_status:         1, /* bit 15 */
+                 is_eeprom_compressed:      1, /* bit 16 */
+                 reserved: 15; /* bits 31:17 */
         };
     };
 
@@ -12770,8 +12845,6 @@ typedef struct {
         };
     };
 
-    A_INT32 reg_tx_pow_limit; /* dBm units */
-    A_INT32 user_pow_limit; /* dBm units */
     A_UINT32 abi_max_rg_gain; /* dB units */
     A_UINT32 abi_max_lg_gain; /* dB units */
     A_UINT32 abi_max_vlg_gain; /* dB units */
@@ -12787,7 +12860,6 @@ typedef struct {
     A_INT32 rssi_xlna_bypass_offset; /* dB units */
     A_INT32 rssi_cbw_offset; /* dB units */
     A_INT32 rssi_chan_freq_offset; /* dB units */
-    A_UINT32 regdb_version;
     A_UINT32 otp_version;
     A_UINT32 cfr_clip_factor[4];
     union {
@@ -12885,25 +12957,15 @@ typedef struct {
 #define HTT_STATS_OPT_CONF_SET_DFS_PUNC(word, value) \
     ((word) = ((word) & ~0x4000) | (((value) & 0x1) << 14))
 
-#define HTT_STATS_OPT_CONF_GET_CTL_BLOB_DOWNLODED(word) \
+#define HTT_STATS_OPT_CONF_GET_DPD_POW_BO(word) \
     (((word) & 0x8000) >> 15)
-#define HTT_STATS_OPT_CONF_SET_CTL_BLOB_DOWNLODED(word, value) \
+#define HTT_STATS_OPT_CONF_SET_DPD_POW_BO(word, value) \
     ((word) = ((word) & ~0x8000) | (((value) & 0x1) << 15))
 
-#define HTT_STATS_OPT_CONF_GET_DPD_POW_BO(word) \
-    (((word) & 0x10000) >> 16)
-#define HTT_STATS_OPT_CONF_SET_DPD_POW_BO(word, value) \
-    ((word) = ((word) & ~0x10000) | (((value) & 0x1) << 16))
-
 #define HTT_STATS_OPT_CONF_GET_EEPROM_COMPRESSED(word) \
-    (((word) & 0x20000) >> 17)
+    (((word) & 0x10000) >> 16)
 #define HTT_STATS_OPT_CONF_SET_EEPROM_COMPRESSED(word, value) \
-    ((word) = ((word) & ~0x20000) | (((value) & 0x1) << 17))
-
-#define HTT_STATS_OPT_CONF_GET_CTL_TABLE_LOADED(word) \
-    (((word) & 0x40000) >> 18)
-#define HTT_STATS_OPT_CONF_SET_CTL_TABLE_LOADED(word, value) \
-    ((word) = ((word) & ~0x40000) | (((value) & 0x1) << 18))
+    ((word) = ((word) & ~0x10000) | (((value) & 0x1) << 16))
 
 
 #define HTT_STATS_OPT_CONF_GET_RXSOP_ENABLED(word) \
@@ -16325,14 +16387,7 @@ typedef struct {
                      deployment_type: 8, /* bits 15:8 */
                      /* Bit 0 : LPI, Bit 1 : SP, Bit 2 : VLP, others: rsvd */
                      power_mode_mask: 8, /* bits 23:16 */
-                     /* Tx is suspended or not */
-                     is_tx_allowed_by_afc: 1, /* bit 24 */
-                     /* is_tx_allowed_by_hw_min_power_check:
-                      * channel is blocked or not due to the HW Minimum power
-                      * compliance check
-                      */
-                     is_tx_allowed_by_hw_min_power_check: 1, /* bit 25 */
-                     reserved: 6;
+                     reserved: 8;
         };
         A_UINT32 afc_ini_params; /* AFC_INI_CONFIG */
     };
@@ -16373,16 +16428,6 @@ typedef struct {
     HTT_STATS_GET_FIELD(0x00FF0000, 16, (word))
 #define HTT_STATS_REG_6G_SET_POWER_MODE_MASK(word,value) \
     HTT_STATS_SET_FIELD(0x00FF0000, 16, (word), (value))
-
-#define HTT_STATS_REG_6G_GET_IS_TX_ALLOWED_BY_AFC(word) \
-    HTT_STATS_GET_FIELD(0x01000000, 24, (word))
-#define HTT_STATS_REG_6G_SET_IS_TX_ALLOWED_BY_AFC(word,value) \
-    HTT_STATS_SET_FIELD(0x01000000, 24, (word), (value))
-
-#define HTT_STATS_REG_6G_GET_IS_TX_ALLOWED_BY_HW_MIN_POWER_CHECK(word) \
-    HTT_STATS_GET_FIELD(0x02000000, 25, (word))
-#define HTT_STATS_REG_6G_SET_IS_TX_ALLOWED_BY_HW_MIN_POWER_CHECK(word,value) \
-    HTT_STATS_SET_FIELD(0x02000000, 25, (word), (value))
 
 
 #define HTT_STATS_REG_6G_GET_SET_TPC_COUNT(word) \
@@ -16470,7 +16515,10 @@ typedef struct {
         psd_power_freq_pair[HTT_STATS_REG_POWER_INFO_6G_MAX_SUBBANDS];
     htt_stats_reg_freq_power_pair_t
         eirp_power_freq_pair[HTT_STATS_REG_POWER_INFO_6G_MAX_SUBBANDS];
-} htt_stats_reg_6g_ch_power_info_tlv;
+} htt_stats_reg_6g_ch_pwr_info_tlv;
+/* preserve old name alias for new name consistent with the tag name */
+typedef htt_stats_reg_6g_ch_pwr_info_tlv
+    htt_stats_reg_6g_ch_power_info_tlv;
 
 #define HTT_STATS_REG_6G_GET_POWER_TYPE(word) \
     HTT_STATS_GET_FIELD(0xFF, 0, (word))
@@ -16925,6 +16973,26 @@ typedef struct {
     A_UINT32 sq_idx[HTT_STATS_MAX_CHAINS][HTT_STATS_NUM_DPD_CAL_TABLE];
     A_INT32  nmse_chain[HTT_STATS_MAX_CHAINS][HTT_STATS_NUM_DPD_CAL_TABLE];
 } htt_stats_dpd_hw_cal_results_tlv;
+
+typedef struct {
+    htt_tlv_hdr_t tlv_hdr;
+    A_UINT32 mu_rts_tx_success;
+    A_UINT32 mu_rts_tx_fail;
+    A_UINT32 mu_rts_rx_success;
+    A_UINT32 bsrp_ntb_tx_success;
+    A_UINT32 bsrp_ntb_tx_fail;
+    A_UINT32 bsrp_ntb_rx_success;
+    A_UINT32 bsrp_tx_success;
+    A_UINT32 bsrp_tx_fail;
+    A_UINT32 bsrp_rx_success;
+    A_UINT32 npca_tx_bw[HTT_TX_PDEV_STATS_NUM_BN_BW_COUNTERS];
+    A_UINT32 npca_su_tx_punctured_mode[HTT_TX_PDEV_STATS_NUM_PUNCTURED_MODE_COUNTERS];
+    A_UINT32 npca_rx_bw[HTT_TX_PDEV_STATS_NUM_BN_BW_COUNTERS];
+    A_UINT32 npca_su_rx_punctured_mode[HTT_TX_PDEV_STATS_NUM_BN_BW_COUNTERS];
+    A_UINT32 schd_cmd_result_npca[HTT_STATS_MAX_SCH_CMD_RESULT];
+    htt_tx_rate_stats_t npca_per_bw[HTT_TX_PDEV_STATS_NUM_BN_BW_COUNTERS];
+    htt_tx_rate_stats_t npca_per_tx_su_punctured_mode[HTT_TX_PDEV_STATS_NUM_PUNCTURED_MODE_COUNTERS];
+} htt_stats_npca_tlv;
 
 
 #endif /* __HTT_STATS_H__ */
