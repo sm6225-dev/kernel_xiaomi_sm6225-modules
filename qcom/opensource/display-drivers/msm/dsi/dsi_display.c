@@ -75,6 +75,7 @@ static bool is_sim_panel(struct dsi_display *display)
 }
 
 #ifdef CONFIG_TARGET_PROJECT_K7T
+#include "exposure_adjustment.h"
 struct dsi_display *primary_display;
 #endif
 
@@ -268,7 +269,19 @@ int dsi_display_set_backlight(struct drm_connector *connector,
 	if (bl_temp > panel->bl_config.bl_max_level)
 		bl_temp = panel->bl_config.bl_max_level;
 
-	if (bl_temp && (bl_temp < panel->bl_config.bl_min_level))
+	/*
+	 * With DC dimming (exposure adjustment) enabled, bl_temp is consumed
+	 * as the PCC dimming index while the HW backlight is pinned to
+	 * ELVSS_OFF_THRESHOLD in ea_panel_calc_backlight(). Applying the
+	 * bl_min_level floor here would clamp that index and raise the
+	 * effective minimum brightness, shrinking the low-end range. Skip the
+	 * floor while DC dimming is active so the full dimming range is usable.
+	 */
+	if (bl_temp && (bl_temp < panel->bl_config.bl_min_level)
+#ifdef CONFIG_TARGET_PROJECT_K7T
+			&& !ea_panel_is_enabled()
+#endif
+			)
 		bl_temp = panel->bl_config.bl_min_level;
 
 	DSI_DEBUG("bl_scale = %u, bl_scale_sv = %u, bl_lvl = %u\n",
