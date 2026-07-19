@@ -365,7 +365,6 @@ static int dsi_panel_set_pinctrl_state(struct dsi_panel *panel, bool enable)
 	return rc;
 }
 
-
 static int dsi_panel_power_on(struct dsi_panel *panel)
 {
 	int rc = 0;
@@ -395,7 +394,6 @@ static int dsi_panel_power_on(struct dsi_panel *panel)
 		DSI_ERR("[%s] failed to reset panel, rc=%d\n", panel->name, rc);
 		goto error_disable_gpio;
 	}
-
 	goto exit;
 
 error_disable_gpio:
@@ -714,12 +712,11 @@ int dsi_panel_set_backlight(struct dsi_panel *panel, u32 bl_lvl)
 		return 0;
 
 #ifdef CONFIG_TARGET_PROJECT_K7T
-	if (panel->dsi_refresh_flag == 60 && bl_lvl > 0) {
-		bl_lvl = (bl_lvl * 85) / 100;
-	}
-
         if (bl_lvl > 0)
                 bl_lvl = ea_panel_calc_backlight(bl_lvl);
+
+	if (!screen_on)
+		return 0;
 #endif
 
 	DSI_DEBUG("backlight type:%d lvl:%d\n", bl->type, bl_lvl);
@@ -3854,6 +3851,7 @@ struct dsi_panel *dsi_panel_get(struct device *parent,
 	drm_panel_add(&panel->drm_panel);
 
 	mutex_init(&panel->panel_lock);
+	panel->dsi_refresh_flag = 0;
 
 	return panel;
 error:
@@ -4732,6 +4730,7 @@ int dsi_panel_prepare(struct dsi_panel *panel)
 		DSI_ERR("invalid params\n");
 		return -EINVAL;
 	}
+
 	mutex_lock(&panel->panel_lock);
 
 	if (panel->lp11_init) {
@@ -5006,6 +5005,8 @@ int dsi_panel_switch(struct dsi_panel *panel)
 
 	mutex_lock(&panel->panel_lock);
 
+	dsi_set_backlight_control(panel, panel->cur_mode);
+
 	rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_TIMING_SWITCH);
 	if (rc)
 		DSI_ERR("[%s] failed to send DSI_CMD_SET_TIMING_SWITCH cmds, rc=%d\n",
@@ -5253,7 +5254,7 @@ void dsi_set_backlight_control(struct dsi_panel *panel,
 	}
 
 	mutex_lock(&panel->panel_lock);
-	if (adj_mode->timing.refresh_rate == 90) {
+	if (adj_mode->timing.refresh_rate == 90 && panel->dsi_refresh_flag != 90) {
 		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_BC_90HZ);
 		if (rc)
 			pr_err("[%s][%s] failed to send DSI_CMD_SET_DISP_BC_90HZ cmd, rc=%d\n",
@@ -5261,12 +5262,8 @@ void dsi_set_backlight_control(struct dsi_panel *panel,
 		else {
 			panel->dsi_refresh_flag = 90;
 			DSI_INFO("%s: refresh_rate = %d\n", __func__, adj_mode->timing.refresh_rate);
-#ifdef CONFIG_TARGET_PROJECT_K7T
-			if (panel->bl_config.raw_bd)
-				dsi_panel_set_backlight(panel, panel->bl_config.raw_bd->props.brightness);
-#endif
 		}
-	} else if (adj_mode->timing.refresh_rate == 60) {
+	} else if (adj_mode->timing.refresh_rate == 60 && panel->dsi_refresh_flag != 60) {
 		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_BC_60HZ);
 		if (rc)
 			DSI_ERR("[%s][%s] failed to send DSI_CMD_SET_DISP_BC_60HZ cmd, rc=%d\n",
@@ -5274,15 +5271,9 @@ void dsi_set_backlight_control(struct dsi_panel *panel,
 		else {
 			panel->dsi_refresh_flag = 60;
 			DSI_INFO("%s: refresh_rate = %d\n", __func__, adj_mode->timing.refresh_rate);
-#ifdef CONFIG_TARGET_PROJECT_K7T
-			if (panel->bl_config.raw_bd)
-				dsi_panel_set_backlight(panel, panel->bl_config.raw_bd->props.brightness);
-#endif
 		}
 	}
 	mutex_unlock(&panel->panel_lock);
-
-	return;
 }
 
 int dsi_panel_apply_hbm_mode(struct dsi_panel *panel)
