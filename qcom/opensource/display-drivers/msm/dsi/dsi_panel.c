@@ -714,10 +714,6 @@ int dsi_panel_set_backlight(struct dsi_panel *panel, u32 bl_lvl)
 		return 0;
 
 #ifdef CONFIG_TARGET_PROJECT_K7T
-	if (panel->dsi_refresh_flag == 60 && bl_lvl > 0) {
-		bl_lvl = (bl_lvl * 85) / 100;
-	}
-
         if (bl_lvl > 0)
                 bl_lvl = ea_panel_calc_backlight(bl_lvl);
 #endif
@@ -5252,6 +5248,9 @@ void dsi_set_backlight_control(struct dsi_panel *panel,
 		return;
 	}
 
+	if (panel->dsi_refresh_flag == adj_mode->timing.refresh_rate)
+		return;
+
 	mutex_lock(&panel->panel_lock);
 	if (adj_mode->timing.refresh_rate == 90) {
 		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_BC_90HZ);
@@ -5261,10 +5260,6 @@ void dsi_set_backlight_control(struct dsi_panel *panel,
 		else {
 			panel->dsi_refresh_flag = 90;
 			DSI_INFO("%s: refresh_rate = %d\n", __func__, adj_mode->timing.refresh_rate);
-#ifdef CONFIG_TARGET_PROJECT_K7T
-			if (panel->bl_config.raw_bd)
-				dsi_panel_set_backlight(panel, panel->bl_config.raw_bd->props.brightness);
-#endif
 		}
 	} else if (adj_mode->timing.refresh_rate == 60) {
 		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_BC_60HZ);
@@ -5274,10 +5269,6 @@ void dsi_set_backlight_control(struct dsi_panel *panel,
 		else {
 			panel->dsi_refresh_flag = 60;
 			DSI_INFO("%s: refresh_rate = %d\n", __func__, adj_mode->timing.refresh_rate);
-#ifdef CONFIG_TARGET_PROJECT_K7T
-			if (panel->bl_config.raw_bd)
-				dsi_panel_set_backlight(panel, panel->bl_config.raw_bd->props.brightness);
-#endif
 		}
 	}
 	mutex_unlock(&panel->panel_lock);
