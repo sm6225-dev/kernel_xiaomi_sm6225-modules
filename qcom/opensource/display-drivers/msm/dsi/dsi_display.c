@@ -5905,7 +5905,6 @@ static int dsi_display_sysfs_init(struct dsi_display *display)
 	return rc;
 
 }
-#endif
 
 static int dsi_display_get_io_resources(struct msm_io_res *io_res, void *data)
 {
