@@ -1424,6 +1424,7 @@ int dsi_display_set_power(struct drm_connector *connector,
 			rc = dsi_panel_set_nolp(display->panel);
 			drm_notifier_call_chain(DRM_EVENT_BLANK, &g_notify_data);
 		}
+			rc = dsi_panel_set_nolp(display->panel);
 		break;
 	case SDE_MODE_DPMS_OFF:
 	default:
@@ -5631,7 +5632,7 @@ static ssize_t sysfs_hbm_write(struct device *dev,
 {
 	struct dsi_display *display = dev_get_drvdata(dev);
 	int ret, hbm_mode;
-	int bl_lvl_before_hbm = display->panel->bl_config.bl_level;
+	int bl_lvl_before_hbm;
 
 	if (!display->panel)
 		return -EINVAL;
@@ -5656,6 +5657,7 @@ static ssize_t sysfs_hbm_write(struct device *dev,
 		goto error;
 	}
 
+	bl_lvl_before_hbm = display->panel->bl_config.bl_level;
 	ret = dsi_panel_apply_hbm_mode(display->panel);
 	if (ret)
 		DSI_ERR("unable to set hbm mode\n");
@@ -5733,7 +5735,6 @@ error:
 	return rc;
 }
 
-#ifdef CONFIG_TARGET_PROJECT_K7T
 static ssize_t sysfs_doze_status_read(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
@@ -5867,6 +5868,7 @@ static struct attribute *display_fs_attrs[] = {
         &dev_attr_hbm.attr,
 	NULL,
 };
+
 static struct attribute_group display_fs_attrs_group = {
 	.attrs = display_fs_attrs,
 };
@@ -8199,9 +8201,6 @@ int dsi_display_set_mode(struct dsi_display *display,
 		goto error;
 	}
 
-	if (display->panel->panel_initialized && (adj_mode.timing.refresh_rate == 90)) {
-		dsi_set_backlight_control(display->panel, &adj_mode);
-	}
 
 	DSI_INFO("mdp_transfer_time=%d, hactive=%d, vactive=%d, fps=%d, clk_rate=%llu\n",
 			adj_mode.priv_info->mdp_transfer_time_us,
