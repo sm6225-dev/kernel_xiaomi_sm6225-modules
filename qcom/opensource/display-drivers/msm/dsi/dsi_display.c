@@ -8186,7 +8186,9 @@ int dsi_display_set_mode(struct dsi_display *display,
 		goto error;
 	}
 
-	if (display->panel->panel_initialized && (adj_mode.timing.refresh_rate == 90)) {
+	if (display->panel->panel_initialized &&
+			(adj_mode.timing.refresh_rate == 60 ||
+			 adj_mode.timing.refresh_rate == 90)) {
 		dsi_set_backlight_control(display->panel, &adj_mode);
 	}
 

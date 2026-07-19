@@ -714,10 +714,6 @@ int dsi_panel_set_backlight(struct dsi_panel *panel, u32 bl_lvl)
 		return 0;
 
 #ifdef CONFIG_TARGET_PROJECT_K7T
-	if (panel->dsi_refresh_flag == 60 && bl_lvl > 0) {
-		bl_lvl = (bl_lvl * 85) / 100;
-	}
-
         if (bl_lvl > 0)
                 bl_lvl = ea_panel_calc_backlight(bl_lvl);
 #endif
