@@ -1,0 +1,77 @@
+# We can build either as part of a standalone Kernel build or as
+# an external module.  Determine which mechanism is being used
+ifeq ($(MODNAME),)
+	KERNEL_BUILD := 1
+else
+	KERNEL_BUILD := 0
+endif
+
+ifeq ($(KERNEL_BUILD), 1)
+	AUDIO_ROOT := $(shell pwd)/../../../../sm6225-modules/qcom/opensource/audio-kernel-apr
+endif
+
+ifeq ($(KERNEL_BUILD), 0)
+	ifeq ($(CONFIG_ARCH_BENGAL), y)
+		include $(AUDIO_ROOT)/config/spesauto.conf
+		INCS    +=  -include $(AUDIO_ROOT)/config/spesautoconf.h
+	endif
+	ifeq ($(CONFIG_ARCH_KHAJE), y)
+		include $(AUDIO_ROOT)/config/spesauto.conf
+		INCS    +=  -include $(AUDIO_ROOT)/config/spesautoconf.h
+	endif
+endif
+
+############ UAPI ############
+UAPI_DIR :=	uapi
+UAPI_INC :=	-I$(AUDIO_ROOT)/include/$(UAPI_DIR)
+
+############ COMMON ############
+COMMON_DIR :=	include
+COMMON_INC :=	-I$(AUDIO_ROOT)/$(COMMON_DIR)
+
+############ IPC ############
+
+ifdef CONFIG_MSM_QDSP6_APRV2_RPMSG
+APRV_GLINK += apr.o
+APRV_GLINK += apr_v2.o
+APRV_GLINK += apr_tal_rpmsg.o
+endif
+
+LINUX_INC +=	-Iinclude/linux
+
+INCS +=		$(COMMON_INC) \
+		$(UAPI_INC)
+
+EXTRA_CFLAGS += $(INCS)
+
+
+CDEFINES +=	-DANI_LITTLE_BYTE_ENDIAN \
+		-DANI_LITTLE_BIT_ENDIAN \
+		-DDOT11F_LITTLE_ENDIAN_HOST \
+		-DANI_COMPILER_TYPE_GCC \
+		-DANI_OS_TYPE_ANDROID=6 \
+		-DPTT_SOCK_SVC_ENABLE \
+		-Wall\
+		-D__linux__
+
+KBUILD_CPPFLAGS += $(CDEFINES)
+
+ifeq ($(KERNEL_BUILD), 0)
+KBUILD_EXTRA_SYMBOLS += $(AUDIO_ROOT)/dsp/Module.symvers
+endif
+
+ifeq ($(call cc-option-yn, -Wmaybe-uninitialized),y)
+EXTRA_CFLAGS += -Wmaybe-uninitialized
+endif
+
+ifeq ($(call cc-option-yn, -Wheader-guard),y)
+EXTRA_CFLAGS += -Wheader-guard
+endif
+
+ifeq ($(CONFIG_SND_SOC_GCOV), y)
+GCOV_PROFILE := y
+endif
+
+# Module information used by KBuild framework
+obj-$(CONFIG_MSM_QDSP6_APRV2_RPMSG) += apr_dlkm.o
+apr_dlkm-y := $(APRV_GLINK)
