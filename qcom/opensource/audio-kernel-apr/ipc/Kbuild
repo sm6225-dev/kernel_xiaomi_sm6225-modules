@@ -7,7 +7,7 @@ else
 endif
 
 ifeq ($(KERNEL_BUILD), 1)
-	AUDIO_ROOT := $(shell pwd)/../../../../sm6225-modules/qcom/opensource/audio-kernel-apr
+	AUDIO_ROOT := $(M)
 endif
 
 ifeq ($(KERNEL_BUILD), 0)
