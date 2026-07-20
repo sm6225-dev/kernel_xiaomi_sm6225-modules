@@ -1,1 +1,1 @@
-/home/hallt/kernel/sm6225-5.15/drivers/pinctrl/pinctrl-utils.h
+../../../../../sm6225-5.15/drivers/pinctrl/pinctrl-utils.h
