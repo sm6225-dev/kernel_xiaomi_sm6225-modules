@@ -9,10 +9,10 @@ ifeq ($(call is-board-platform-in-list, sdm660 msm8953 msm8937),true)
 LOCAL_PATH := $(call my-dir)
 
 # This makefile is only for DLKM
-ifneq ($(findstring vendor,$(LOCAL_PATH)),)
+ifneq ($(findstring sm6225-modules,$(LOCAL_PATH)),)
 
 ifneq ($(findstring opensource,$(LOCAL_PATH)),)
-	AUDIO_BLD_DIR := $(shell pwd)/vendor/qcom/opensource/audio-kernel
+	AUDIO_BLD_DIR := $(shell pwd)/$(MY_LOCAL_PATH)
 endif # opensource
 
 DLKM_DIR := $(TOP)/device/qcom/common/dlkm
