@@ -1,0 +1,32 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
+#ifndef __WCD_JACK_COMPAT_H__
+#define __WCD_JACK_COMPAT_H__
+
+#include <sound/jack.h>
+
+#ifndef SND_JACK_OC_HPHL
+#define SND_JACK_OC_HPHL	0x0040
+#endif
+
+#ifndef SND_JACK_OC_HPHR
+#define SND_JACK_OC_HPHR	0x0080
+#endif
+
+#ifndef SND_JACK_UNSUPPORTED
+#define SND_JACK_UNSUPPORTED	0x0100
+#endif
+
+#ifndef SND_JACK_MICROPHONE2
+#define SND_JACK_MICROPHONE2	0x0200
+#endif
+
+#ifndef SND_JACK_ANC_HEADPHONE
+#define SND_JACK_ANC_HEADPHONE	(SND_JACK_HEADPHONE | SND_JACK_MICROPHONE | \
+				 SND_JACK_MICROPHONE2)
+#endif
+
+#ifndef POWER_SUPPLY_TYPEC_SINK_AUDIO_ADAPTER
+#define POWER_SUPPLY_TYPEC_SINK_AUDIO_ADAPTER	0x7F
+#endif
+
+#endif
