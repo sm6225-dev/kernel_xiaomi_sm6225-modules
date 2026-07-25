@@ -1,0 +1,15 @@
+obj-m += bmi26x_driver.o
+bmi26x_driver-objs := \
+    bmi26x/bmi260_core.o \
+    bmi26x/bmi260_i2c.o
+
+obj-m += ak0991x_driver.o
+ak0991x_driver-objs := \
+    ak0991x/ak0991x-i2c.o \
+    ak0991x/ak0991x-iio.o
+
+obj-m += bu27030_driver.o
+bu27030_driver-objs := \
+    bu27030/bu27030_driver.o
+
+ccflags-y += -I$(M)/bmi26x -I$(M)/ak0991x -I$(M)/bu27030
