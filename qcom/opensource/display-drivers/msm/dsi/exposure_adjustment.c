@@ -25,6 +25,7 @@
 #include "dsi_panel.h"
 #include "../sde/sde_crtc.h"
 #include "../sde/sde_plane.h"
+#include "../sde/sde_color_processing.h"
 #include "exposure_adjustment.h"
 
 static bool pcc_backlight_enable = false;
@@ -64,8 +65,8 @@ static int ea_panel_send_pcc(u32 bl_lvl)
 
 	pr_debug("%s: Backlight = %d\n", __func__, bl_lvl);
 
-	if (bl_lvl < ELVSS_OFF_THRESHOLD) {
-		ea_coeff = bl_lvl * PCC_BACKLIGHT_SCALE + EXPOSURE_ADJUSTMENT_MIN;
+	if (bl_lvl <= ELVSS_OFF_THRESHOLD) {
+		ea_coeff = (bl_lvl * (EXPOSURE_ADJUSTMENT_MAX - EXPOSURE_ADJUSTMENT_MIN)) / ELVSS_OFF_THRESHOLD + EXPOSURE_ADJUSTMENT_MIN;
 	} else {
 		ea_coeff = EXPOSURE_ADJUSTMENT_MAX;
 	}
@@ -87,6 +88,8 @@ static int ea_panel_send_pcc(u32 bl_lvl)
 	rc = sde_cp_crtc_set_property(crtc, crtc->state, prop, blob->base.id);
 	if (rc) {
 		pr_err("DSPP: Cannot set PCC: %d.\n", rc);
+	} else {
+		sde_cp_crtc_apply_properties(crtc);
 	}
 
 	return rc;
@@ -116,7 +119,7 @@ u32 ea_panel_calc_backlight(u32 bl_lvl)
 	static bool pcc_is_dimmed = false;
 	last_level = bl_lvl;
 
-	if (pcc_backlight_enable && bl_lvl != 0 && bl_lvl < ELVSS_OFF_THRESHOLD) {
+	if (pcc_backlight_enable && bl_lvl != 0 && bl_lvl <= ELVSS_OFF_THRESHOLD) {
 		if (ea_panel_send_pcc(bl_lvl))
 			pr_err("ERROR: Failed to send PCC\n");
 		
