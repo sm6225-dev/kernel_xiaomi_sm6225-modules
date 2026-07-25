@@ -1,7 +1,7 @@
 ccflags-y := -I$(src) -Wall -Werror
 IO_MODULE := msm
 
-# EXTRA_CFLAGS += -DDEBUG
+EXTRA_CFLAGS += -DDEBUG
 
 # Need to add include paths:
 LINUXINCLUDE += \
