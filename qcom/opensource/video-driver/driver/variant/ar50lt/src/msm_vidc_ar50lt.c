@@ -301,13 +301,13 @@ static int __disable_regulator_ar50lt(struct msm_vidc_core *core,
 
 	found = false;
 	venus_hfi_for_each_regulator(core, rinfo) {
-		if (!rinfo->regulator) {
-			d_vpr_e("%s: invalid regulator %s\n",
-				__func__, rinfo->name);
-			return -EINVAL;
-		}
 		if (strcmp(rinfo->name, reg_name))
 			continue;
+		if (!rinfo->regulator) {
+			d_vpr_h("%s: regulator %s not attached, skipping\n",
+				__func__, rinfo->name);
+			return 0;
+		}
 		found = true;
 
 		rc = __acquire_regulator(core, rinfo);
@@ -330,8 +330,8 @@ static int __disable_regulator_ar50lt(struct msm_vidc_core *core,
 		break;
 	}
 	if (!found) {
-		d_vpr_e("%s: regulator %s not found\n", __func__, reg_name);
-		return -EINVAL;
+		d_vpr_h("%s: regulator %s not active\n", __func__, reg_name);
+		return 0;
 	}
 
 	return rc;
@@ -351,13 +351,13 @@ static int __enable_regulator_ar50lt(struct msm_vidc_core *core,
 
 	found = false;
 	venus_hfi_for_each_regulator(core, rinfo) {
-		if (!rinfo->regulator) {
-			d_vpr_e("%s: invalid regulator %s\n",
-				__func__, rinfo->name);
-			return -EINVAL;
-		}
 		if (strcmp(rinfo->name, reg_name))
 			continue;
+		if (!rinfo->regulator) {
+			d_vpr_h("%s: regulator %s not attached, skipping\n",
+				__func__, rinfo->name);
+			return 0;
+		}
 		found = true;
 
 		rc = regulator_enable(rinfo->regulator);
