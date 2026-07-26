@@ -223,6 +223,13 @@ int validate_packet(u8 *response_pkt, u8 *core_resp_pkt,
 	return 0;
 }
 
+static bool is_legacy_ar50lt(struct msm_vidc_core *core)
+{
+	return core && core->platform &&
+		(core->platform->data.vpu_ver == VENUS_VERSION_AR50LT_V1 ||
+		 core->platform->data.vpu_ver == VENUS_VERSION_AR50LT_V2);
+}
+
 static int validate_hdr_packet(struct msm_vidc_core *core,
 	struct hfi_header *hdr, const char *function)
 {
@@ -233,6 +240,15 @@ static int validate_hdr_packet(struct msm_vidc_core *core,
 	if (!core || !hdr || !function) {
 		d_vpr_e("%s: invalid params\n", __func__);
 		return -EINVAL;
+	}
+
+	if (is_legacy_ar50lt(core)) {
+		/* Legacy 4.19 Venus packet validation: size must be at least 8 bytes */
+		if (hdr->size < sizeof(u32) * 2) {
+			d_vpr_e("%s: invalid legacy header size %d\n", __func__, hdr->size);
+			return -EINVAL;
+		}
+		return 0;
 	}
 
 	if (hdr->size < sizeof(struct hfi_header) + sizeof(struct hfi_packet)) {
@@ -1901,6 +1917,39 @@ exit:
 	return rc;
 }
 
+static int handle_legacy_ar50lt_response(struct msm_vidc_core *core, void *response)
+{
+	u32 *words = (u32 *)response;
+	u32 size = words[0];
+	u32 type = words[1];
+	u32 error_type = (size >= 12) ? words[2] : 0;
+	struct hfi_packet pkt;
+
+	d_vpr_h("%s: legacy response size %u, type %#x, err %#x\n",
+		__func__, size, type, error_type);
+
+	memset(&pkt, 0, sizeof(pkt));
+	pkt.size = sizeof(pkt);
+	pkt.type = type;
+	if (error_type == 0)
+		pkt.flags |= HFI_FW_FLAGS_SUCCESS;
+
+	/* System init response (HFI_CMD_INIT, HFI_MSG_SYS_INIT_DONE, or legacy opcodes) */
+	if (type == HFI_CMD_INIT || type == 0x00020001 || type == 0x00010002 || type == 0x00020002 || type == HFI_PROP_IMAGE_VERSION) {
+		d_vpr_h("%s: legacy sys_init_done received (type %#x)\n", __func__, type);
+		complete(&core->init_done);
+		return 0;
+	}
+
+	/* System error responses */
+	if (type == HFI_SYS_ERROR_WD_TIMEOUT || (error_type && error_type != 0x1000000)) {
+		d_vpr_e("%s: legacy system error %#x\n", __func__, type);
+		return handle_system_error(core, &pkt);
+	}
+
+	return 0;
+}
+
 int handle_response(struct msm_vidc_core *core, void *response)
 {
 	struct hfi_header *hdr;
@@ -1917,6 +1966,9 @@ int handle_response(struct msm_vidc_core *core, void *response)
 		d_vpr_e("%s: hdr pkt validation failed\n", __func__);
 		return handle_system_error(core, NULL);
 	}
+
+	if (is_legacy_ar50lt(core))
+		return handle_legacy_ar50lt_response(core, response);
 
 	if (!hdr->session_id)
 		return handle_system_response(core, hdr);

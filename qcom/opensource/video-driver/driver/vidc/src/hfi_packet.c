@@ -315,6 +315,8 @@ int get_hfi_buffer(struct msm_vidc_inst *inst,
 	return 0;
 }
 
+extern struct msm_vidc_core *g_core;
+
 int hfi_create_header(u8 *packet, u32 packet_size, u32 session_id,
 	u32 header_id)
 {
@@ -326,6 +328,14 @@ int hfi_create_header(u8 *packet, u32 packet_size, u32 session_id,
 	}
 
 	memset(hdr, 0, sizeof(struct hfi_header));
+
+	if (g_core && g_core->platform &&
+	    (g_core->platform->data.vpu_ver == VENUS_VERSION_AR50LT_V1 ||
+	     g_core->platform->data.vpu_ver == VENUS_VERSION_AR50LT_V2)) {
+		/* Legacy 4.19 AR50LT Venus: no hfi_header wrapper, packets start at offset 0 */
+		hdr->size = 0;
+		return 0;
+	}
 
 	hdr->size = sizeof(struct hfi_header);
 	hdr->session_id = session_id;
@@ -347,6 +357,25 @@ int hfi_create_packet(u8 *packet, u32 packet_size,
 		return -EINVAL;
 	}
 	hdr = (struct hfi_header *)packet;
+
+	if (g_core && g_core->platform &&
+	    (g_core->platform->data.vpu_ver == VENUS_VERSION_AR50LT_V1 ||
+	     g_core->platform->data.vpu_ver == VENUS_VERSION_AR50LT_V2)) {
+		/* Legacy 4.19 AR50LT Venus packet creation without 32-byte hfi_header wrapper */
+		u32 *words = (u32 *)(packet + hdr->size);
+		u32 leg_size = sizeof(u32) * 2 + payload_size;
+		if (packet_size < hdr->size + leg_size) {
+			d_vpr_e("%s: legacy packet_size overflow\n", __func__);
+			return -EINVAL;
+		}
+		words[0] = leg_size;
+		words[1] = pkt_type;
+		if (payload_size && payload)
+			memcpy(&words[2], payload, payload_size);
+		hdr->size += leg_size;
+		return 0;
+	}
+
 	if (hdr->size < sizeof(struct hfi_header)) {
 		d_vpr_e("%s: invalid hdr size %d\n", __func__, hdr->size);
 		return -EINVAL;

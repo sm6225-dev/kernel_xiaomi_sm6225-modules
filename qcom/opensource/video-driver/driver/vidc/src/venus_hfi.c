@@ -1733,26 +1733,18 @@ static void __deinit_regulators(struct msm_vidc_core *core)
 
 static int __init_regulators(struct msm_vidc_core *core)
 {
-	int rc = 0;
 	struct regulator_info *rinfo = NULL;
 
 	venus_hfi_for_each_regulator(core, rinfo) {
 		rinfo->regulator = regulator_get(&core->pdev->dev,
 				rinfo->name);
 		if (IS_ERR_OR_NULL(rinfo->regulator)) {
-			rc = PTR_ERR(rinfo->regulator) ?
-				PTR_ERR(rinfo->regulator) : -EBADHANDLE;
-			d_vpr_e("Failed to get regulator: %s\n", rinfo->name);
+			d_vpr_h("Regulator %s not found or optional, continuing\n", rinfo->name);
 			rinfo->regulator = NULL;
-			goto err_reg_get;
 		}
 	}
 
 	return 0;
-
-err_reg_get:
-	__deinit_regulators(core);
-	return rc;
 }
 
 static void __deinit_subcaches(struct msm_vidc_core *core)
@@ -2482,12 +2474,27 @@ static int __load_fw_to_memory(struct platform_device *pdev,
 	phys = res.start;
 	res_size = (size_t)resource_size(&res);
 
-	rc = request_firmware(&firmware, firmware_name, &pdev->dev);
+	/*
+	 * Try loading firmware using standard request_firmware() path.
+	 * For 4.19 Venus firmware stored in /vendor/firmware_mnt/image/,
+	 * the firmware_class.path kernel parameter must point to that
+	 * directory. Try .mbn first, then fall back to .mdt.
+	 */
+	rc = firmware_request_nowarn(&firmware, firmware_name, &pdev->dev);
 	if (rc) {
-		d_vpr_e("%s: failed to request fw \"%s\", error %d\n",
-			__func__, firmware_name, rc);
-		goto exit;
+		d_vpr_h("%s: failed to request \"%s\" (rc %d), trying %s.mdt\n",
+			__func__, firmware_name, rc, fw_name);
+		scnprintf(firmware_name, ARRAY_SIZE(firmware_name), "%s.mdt", fw_name);
+		rc = firmware_request_nowarn(&firmware, firmware_name, &pdev->dev);
+		if (rc) {
+			d_vpr_e("%s: failed to request fw \"%s\", error %d\n",
+				__func__, firmware_name, rc);
+			goto exit;
+		}
 	}
+
+	d_vpr_h("%s: firmware \"%s\" requested successfully\n",
+		__func__, firmware_name);
 
 	fw_size = qcom_mdt_get_size(firmware);
 	if (fw_size < 0 || res_size < (size_t)fw_size) {
@@ -2509,6 +2516,7 @@ static int __load_fw_to_memory(struct platform_device *pdev,
 	rc = qcom_mdt_load(&pdev->dev, firmware, firmware_name,
 		pas_id, virt, phys, res_size, NULL);
 	pm_relax(pdev->dev.parent);
+
 	if (rc) {
 		d_vpr_e("%s: error %d loading fw \"%s\"\n",
 			__func__, rc, firmware_name);
@@ -2536,6 +2544,7 @@ exit:
 
 	return rc;
 }
+
 
 int __load_fw(struct msm_vidc_core *core)
 {
@@ -2672,6 +2681,11 @@ irqreturn_t venus_hfi_isr_handler(int irq, void *data)
 	}
 
 	core_lock(core, __func__);
+	if (!__core_in_valid_state(core)) {
+		d_vpr_h("%s: core is in DEINIT state, skipping\n", __func__);
+		core_unlock(core, __func__);
+		goto exit;
+	}
 	rc = __resume(core);
 	if (rc) {
 		d_vpr_e("%s: Power on failed\n", __func__);
