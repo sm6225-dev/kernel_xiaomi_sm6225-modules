@@ -2484,9 +2484,15 @@ static int __load_fw_to_memory(struct platform_device *pdev,
 
 	rc = request_firmware(&firmware, firmware_name, &pdev->dev);
 	if (rc) {
-		d_vpr_e("%s: failed to request fw \"%s\", error %d\n",
-			__func__, firmware_name, rc);
-		goto exit;
+		d_vpr_h("%s: failed to request \"%s\", trying %s.mdt\n",
+			__func__, firmware_name, fw_name);
+		scnprintf(firmware_name, ARRAY_SIZE(firmware_name), "%s.mdt", fw_name);
+		rc = request_firmware(&firmware, firmware_name, &pdev->dev);
+		if (rc) {
+			d_vpr_e("%s: failed to request fw \"%s\", error %d\n",
+				__func__, firmware_name, rc);
+			goto exit;
+		}
 	}
 
 	fw_size = qcom_mdt_get_size(firmware);
@@ -2509,6 +2515,24 @@ static int __load_fw_to_memory(struct platform_device *pdev,
 	rc = qcom_mdt_load(&pdev->dev, firmware, firmware_name,
 		pas_id, virt, phys, res_size, NULL);
 	pm_relax(pdev->dev.parent);
+
+	if (rc && strcmp(firmware_name + strlen(firmware_name) - 4, ".mdt") != 0) {
+		d_vpr_h("%s: error %d loading \"%s\", falling back to %s.mdt\n",
+			__func__, rc, firmware_name, fw_name);
+		release_firmware(firmware);
+		firmware = NULL;
+		scnprintf(firmware_name, ARRAY_SIZE(firmware_name), "%s.mdt", fw_name);
+		if (request_firmware(&firmware, firmware_name, &pdev->dev) == 0) {
+			fw_size = qcom_mdt_get_size(firmware);
+			if (fw_size >= 0 && res_size >= (size_t)fw_size) {
+				pm_stay_awake(pdev->dev.parent);
+				rc = qcom_mdt_load(&pdev->dev, firmware, firmware_name,
+					pas_id, virt, phys, res_size, NULL);
+				pm_relax(pdev->dev.parent);
+			}
+		}
+	}
+
 	if (rc) {
 		d_vpr_e("%s: error %d loading fw \"%s\"\n",
 			__func__, rc, firmware_name);
