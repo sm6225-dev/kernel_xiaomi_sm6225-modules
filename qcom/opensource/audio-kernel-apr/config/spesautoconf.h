@@ -46,7 +46,7 @@
 #define CONFIG_MI2S_DISABLE 1
 #define CONFIG_AUXPCM_DISABLE 1
 #define CONFIG_XIAOMI_AUDIO_MBHC 1
-#define CONFIG_SND_SOC_LCT_PINCTRL 1
+#define CONFIG_SND_SOC_LCT_PINCTRL 0
 
 /* QC jack extensions not present in upstream 5.15 */
 #define SND_JACK_OC_HPHL	0x0040
