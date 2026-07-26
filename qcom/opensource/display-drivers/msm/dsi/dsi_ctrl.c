@@ -362,9 +362,27 @@ static void dsi_ctrl_dma_cmd_wait_for_done(struct dsi_ctrl *dsi_ctrl)
 	u32 status;
 	u32 mask = DSI_CMD_MODE_DMA_DONE;
 	struct dsi_ctrl_hw_ops dsi_hw_ops;
+	int i;
 
 	dsi_hw_ops = dsi_ctrl->hw.ops;
 	SDE_EVT32(dsi_ctrl->cell_index, SDE_EVTLOG_FUNC_ENTRY);
+
+	for (i = 0; i < 100; i++) {
+		if (atomic_read(&dsi_ctrl->dma_irq_trig))
+			goto done;
+
+		status = dsi_hw_ops.get_interrupt_status(&dsi_ctrl->hw);
+		if (status & mask) {
+			status |= (DSI_CMD_MODE_DMA_DONE | DSI_BTA_DONE);
+			dsi_hw_ops.clear_interrupt_status(&dsi_ctrl->hw, status);
+			atomic_set(&dsi_ctrl->dma_irq_trig, 1);
+			complete_all(&dsi_ctrl->irq_info.cmd_dma_done);
+			dsi_ctrl_disable_status_interrupt(dsi_ctrl,
+						DSI_SINT_CMD_MODE_DMA_DONE);
+			goto done;
+		}
+		usleep_range(200, 250);
+	}
 
 	ret = wait_for_completion_timeout(
 			&dsi_ctrl->irq_info.cmd_dma_done,
@@ -386,8 +404,9 @@ static void dsi_ctrl_dma_cmd_wait_for_done(struct dsi_ctrl *dsi_ctrl)
 		dsi_ctrl_disable_status_interrupt(dsi_ctrl,
 					DSI_SINT_CMD_MODE_DMA_DONE);
 	}
-	SDE_EVT32(dsi_ctrl->cell_index, SDE_EVTLOG_FUNC_EXIT);
 
+done:
+	SDE_EVT32(dsi_ctrl->cell_index, SDE_EVTLOG_FUNC_EXIT);
 }
 
 /**
@@ -513,12 +532,18 @@ static int dsi_ctrl_check_state(struct dsi_ctrl *dsi_ctrl,
 			DSI_CTRL_ERR(dsi_ctrl, "No change in state, pwr_state=%d\n",
 					op_state);
 			rc = -EINVAL;
-		} else if (state->power_state == DSI_CTRL_POWER_VREG_ON) {
+		} else if (state->power_state == DSI_CTRL_POWER_VREG_ON &&
+			   op_state == DSI_CTRL_POWER_VREG_OFF) {
 			if (state->vid_engine_state == DSI_CTRL_ENGINE_ON) {
-				DSI_CTRL_ERR(dsi_ctrl, "State error: op=%d: %d\n",
-				       op_state,
-				       state->vid_engine_state);
-				rc = -EINVAL;
+				DSI_CTRL_WARN(dsi_ctrl, "vid_engine active during power off, resetting\n");
+				state->vid_engine_state = DSI_CTRL_ENGINE_OFF;
+			}
+			if (state->cmd_engine_state == DSI_CTRL_ENGINE_ON) {
+				DSI_CTRL_WARN(dsi_ctrl, "cmd_engine active during power off, resetting\n");
+				state->cmd_engine_state = DSI_CTRL_ENGINE_OFF;
+			}
+			if (state->controller_state == DSI_CTRL_ENGINE_ON) {
+				state->controller_state = DSI_CTRL_ENGINE_OFF;
 			}
 		}
 		break;
@@ -2820,7 +2845,7 @@ static irqreturn_t dsi_ctrl_isr(int irq, void *ptr)
 
 	/* clear interrupts */
 	if (dsi_ctrl->hw.ops.clear_interrupt_status)
-		dsi_ctrl->hw.ops.clear_interrupt_status(&dsi_ctrl->hw, 0x0);
+		dsi_ctrl->hw.ops.clear_interrupt_status(&dsi_ctrl->hw, status);
 
 	SDE_EVT32_IRQ(dsi_ctrl->cell_index, status, errors);
 
@@ -3698,6 +3723,30 @@ int dsi_ctrl_set_power_state(struct dsi_ctrl *dsi_ctrl,
 		DSI_CTRL_ERR(dsi_ctrl, "Invalid Params\n");
 		return -EINVAL;
 	}
+
+	/*
+	 * Drain any queued ASYNC post-transfer cleanup before powering off.
+	 *
+	 * On a VREG_ON -> VREG_OFF transition dsi_ctrl_check_state() force-resets
+	 * cmd/vid/controller state to OFF (see DSI_CTRL_OP_POWER_STATE_CHANGE) so
+	 * that power off is not rejected. That only rewrites the *software* state.
+	 * A post_cmd_tx_work still queued at that point runs afterwards and:
+	 *   - disables an already-OFF command engine, so dsi_ctrl_check_state()
+	 *     reports "No change in state, cmd_state=0" -> rc=-22 ->
+	 *     "failed to disable command engine";
+	 *   - then votes DSI_CLK_OFF and pm_runtime_put_sync() for votes this
+	 *     power-off already dropped -> "Core/Link refcount is zero for
+	 *     dsi_clk_client".
+	 * The unbalanced vote leaves later transfers running with the link clocks
+	 * gated, so their DMA never completes ("Command transfer failed") and the
+	 * panel is left half-programmed while the video engine already streams —
+	 * stripes/zebra right after the boot animation.
+	 *
+	 * Flushing here keeps the cleanup paired with its own transfer. It must be
+	 * done outside ctrl_lock: dsi_ctrl_post_cmd_transfer() takes that lock.
+	 */
+	if (dsi_ctrl->post_tx_queued)
+		dsi_ctrl_flush_cmd_dma_queue(dsi_ctrl);
 
 	mutex_lock(&dsi_ctrl->ctrl_lock);
 
