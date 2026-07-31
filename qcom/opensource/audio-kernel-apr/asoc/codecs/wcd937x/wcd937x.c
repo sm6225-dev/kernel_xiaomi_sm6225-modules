@@ -3400,6 +3400,10 @@ err_irq:
 err:
 	component_unbind_all(dev, wcd937x);
 err_bind_all:
+	if (wcd937x->supplies)
+		msm_cdc_disable_static_supplies(dev, wcd937x->supplies,
+					     pdata->regulator,
+					     pdata->num_supplies);
 	dev_set_drvdata(dev, NULL);
 	kfree(pdata);
 	kfree(wcd937x);
@@ -3416,6 +3420,10 @@ static void wcd937x_unbind(struct device *dev)
 	component_unbind_all(dev, wcd937x);
 	mutex_destroy(&wcd937x->micb_lock);
 	mutex_destroy(&wcd937x->ana_tx_clk_lock);
+	if (wcd937x->supplies)
+		msm_cdc_disable_static_supplies(dev, wcd937x->supplies,
+					     pdata->regulator,
+					     pdata->num_supplies);
 	dev_set_drvdata(dev, NULL);
 	kfree(pdata);
 	kfree(wcd937x);

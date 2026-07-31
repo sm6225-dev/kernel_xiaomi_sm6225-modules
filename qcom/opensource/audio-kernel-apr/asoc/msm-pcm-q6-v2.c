@@ -2451,6 +2451,11 @@ static int msm_pcm_add_channel_mixer_cfg_controls(
 		.private_value = 0,
 	};
 
+	/* Channel-mixer state is allocated only for Multimedia FE IDs. */
+	if (!rtd || !rtd->dai_link ||
+	    rtd->dai_link->id > MSM_FRONTEND_DAI_MM_MAX_ID)
+		return 0;
+
 	component = snd_soc_rtdcom_lookup(rtd, DRV_NAME);
 	if (!component) {
 		pr_err("%s: component is NULL\n", __func__);
@@ -2546,6 +2551,11 @@ static int msm_pcm_add_channel_mixer_controls(struct snd_soc_pcm_runtime *rtd)
 	struct snd_pcm *pcm = NULL;
 	struct msm_plat_data *pdata = NULL;
 	struct snd_soc_component *component = NULL;
+
+	/* pcm_device/chmixer_pspd are Multimedia-FE-sized arrays. */
+	if (!rtd || !rtd->dai_link ||
+	    rtd->dai_link->id > MSM_FRONTEND_DAI_MM_MAX_ID)
+		return 0;
 
 	if (!rtd || !rtd->pcm) {
 		pr_err("%s invalid rtd or pcm\n", __func__);

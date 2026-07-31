@@ -6647,6 +6647,8 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 	}
 
 	card->dev = &pdev->dev;
+	/* Legacy DTs include optional codec routes absent on some variants. */
+	card->disable_route_checks = true;
 	platform_set_drvdata(pdev, card);
 	snd_soc_card_set_drvdata(card, pdata);
 
@@ -6680,6 +6682,8 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 
 	ret = devm_snd_soc_register_card(&pdev->dev, card);
 	if (ret == -EPROBE_DEFER) {
+		dev_err(&pdev->dev, "%s: snd_soc_register_card returned -EPROBE_DEFER (codec_reg_done=%d)\n",
+			__func__, codec_reg_done);
 		if (codec_reg_done)
 			ret = -EINVAL;
 		goto err;

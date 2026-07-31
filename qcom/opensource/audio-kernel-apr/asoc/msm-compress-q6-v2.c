@@ -4675,7 +4675,7 @@ static int msm_compr_add_app_type_cfg_control(struct snd_soc_pcm_runtime *rtd)
 		}
 	};
 
-	if (!rtd) {
+	if (!rtd || !rtd->compr) {
 		pr_err("%s NULL rtd\n", __func__);
 		return 0;
 	}
@@ -5407,7 +5407,8 @@ static int msm_compr_add_channel_mixer_controls(struct snd_soc_pcm_runtime *rtd)
 	struct msm_compr_pdata *pdata = NULL;
 	struct snd_soc_component *component = NULL;
 
-	if (!rtd) {
+	if (!rtd || !rtd->dai_link ||
+	    rtd->dai_link->id >= MSM_FRONTEND_DAI_MM_SIZE) {
 		pr_err("%s NULL rtd\n", __func__);
 		return -EINVAL;
 	}
@@ -5471,6 +5472,13 @@ static int msm_compr_new(struct snd_soc_component *component,
 			 struct snd_soc_pcm_runtime *rtd)
 {
 	int rc;
+
+	/*
+	 * The component new callback is also reached for normal PCM links.
+	 * Compressed controls are valid only after ASoC created rtd->compr.
+	 */
+	if (!rtd || !rtd->compr)
+		return 0;
 
 	rc = msm_compr_add_volume_control(rtd);
 	if (rc)

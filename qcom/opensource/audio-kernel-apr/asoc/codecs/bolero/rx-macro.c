@@ -4202,6 +4202,8 @@ static int rx_macro_remove(struct platform_device *pdev)
 	if (!rx_priv)
 		return -EINVAL;
 
+	cancel_work_sync(&rx_priv->rx_macro_add_child_devices_work);
+
 	for (count = 0; count < rx_priv->child_count &&
 		count < RX_MACRO_CHILD_DEVICES_MAX; count++)
 		platform_device_unregister(rx_priv->pdev_child_devices[count]);

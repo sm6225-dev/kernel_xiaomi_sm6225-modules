@@ -2948,8 +2948,9 @@ static void va_macro_add_child_devices(struct work_struct *work)
 	}
 	return;
 fail_pdev_add:
+	platform_device_put(pdev);
 	for (count = 0; count < va_priv->child_count; count++)
-		platform_device_put(va_priv->pdev_child_devices[count]);
+		platform_device_unregister(va_priv->pdev_child_devices[count]);
 err:
 	return;
 }
@@ -3200,6 +3201,7 @@ static int va_macro_remove(struct platform_device *pdev)
 	if (!va_priv)
 		return -EINVAL;
 	if (va_priv->is_used_va_swr_gpio) {
+		cancel_work_sync(&va_priv->va_macro_add_child_devices_work);
 		if (va_priv->swr_ctrl_data)
 			kfree(va_priv->swr_ctrl_data);
 		for (count = 0; count < va_priv->child_count &&

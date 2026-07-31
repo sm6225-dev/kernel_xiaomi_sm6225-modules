@@ -1,3 +1,4 @@
+#include <ipc/apr.h>
 // SPDX-License-Identifier: GPL-2.0-only
 /* Copyright (c) 2018-2020, The Linux Foundation. All rights reserved.
  */
@@ -15,6 +16,7 @@
 #include <linux/pm_runtime.h>
 #include <soc/swr-common.h>
 #include <dsp/digital-cdc-rsc-mgr.h>
+#include <dsp/q6core.h>
 #include "bolero-cdc.h"
 #include "internal.h"
 #include "bolero-clk-rsc.h"
@@ -1303,7 +1305,7 @@ static void bolero_add_child_devices(struct work_struct *work)
 	return;
 fail_pdev_add:
 	for (count = 0; count < priv->child_count; count++)
-		platform_device_put(priv->pdev_child_devices[count]);
+		platform_device_unregister(priv->pdev_child_devices[count]);
 err:
 	return;
 }
@@ -1315,6 +1317,11 @@ static int bolero_probe(struct platform_device *pdev)
 	int ret;
 	struct clk *lpass_core_hw_vote = NULL;
 	struct clk *lpass_audio_hw_vote = NULL;
+
+	if (!q6core_is_adsp_ready()) {
+		dev_dbg(&pdev->dev, "ADSP is not ready, deferring probe\n");
+		return -EPROBE_DEFER;
+	}
 
 	priv = devm_kzalloc(&pdev->dev, sizeof(struct bolero_priv),
 			    GFP_KERNEL);
@@ -1384,6 +1391,8 @@ static int bolero_probe(struct platform_device *pdev)
 	lpass_core_hw_vote = devm_clk_get(&pdev->dev, "lpass_core_hw_vote");
 	if (IS_ERR(lpass_core_hw_vote)) {
 		ret = PTR_ERR(lpass_core_hw_vote);
+		if (ret == -EPROBE_DEFER)
+			return ret;
 		dev_dbg(&pdev->dev, "%s: clk get %s failed %d\n",
 			__func__, "lpass_core_hw_vote", ret);
 		lpass_core_hw_vote = NULL;
@@ -1395,6 +1404,8 @@ static int bolero_probe(struct platform_device *pdev)
 	lpass_audio_hw_vote = devm_clk_get(&pdev->dev, "lpass_audio_hw_vote");
 	if (IS_ERR(lpass_audio_hw_vote)) {
 		ret = PTR_ERR(lpass_audio_hw_vote);
+		if (ret == -EPROBE_DEFER)
+			return ret;
 		dev_dbg(&pdev->dev, "%s: clk get %s failed %d\n",
 			__func__, "lpass_audio_hw_vote", ret);
 		lpass_audio_hw_vote = NULL;
@@ -1409,11 +1420,15 @@ static int bolero_probe(struct platform_device *pdev)
 static int bolero_remove(struct platform_device *pdev)
 {
 	struct bolero_priv *priv = dev_get_drvdata(&pdev->dev);
+	int count;
 
 	if (!priv)
 		return -EINVAL;
 
-	of_platform_depopulate(&pdev->dev);
+	cancel_work_sync(&priv->bolero_add_child_devices_work);
+	for (count = 0; count < priv->child_count; count++)
+		platform_device_unregister(priv->pdev_child_devices[count]);
+
 	mutex_destroy(&priv->io_lock);
 	mutex_destroy(&priv->clk_lock);
 	mutex_destroy(&priv->vote_lock);
@@ -1437,7 +1452,7 @@ int bolero_runtime_resume(struct device *dev)
 		if (ret < 0) {
 			dev_err(dev, "%s:lpass core hw enable failed\n",
 				__func__);
-			goto audio_vote;
+			goto err;
 		}
 	}
 	priv->core_hw_vote_count++;
@@ -1447,7 +1462,7 @@ int bolero_runtime_resume(struct device *dev)
 audio_vote:
 	if (priv->lpass_audio_hw_vote == NULL) {
 		dev_dbg(dev, "%s: Invalid lpass audio hw node\n", __func__);
-		goto done;
+		goto err;
 	}
 
 	if (priv->core_audio_vote_count == 0) {
@@ -1455,17 +1470,19 @@ audio_vote:
 		if (ret < 0) {
 			dev_err(dev, "%s:lpass audio hw enable failed\n",
 				__func__);
-			goto done;
+			goto err;
 		}
 	}
 	priv->core_audio_vote_count++;
 	trace_printk("%s: audio vote count %d\n",
 		__func__, priv->core_audio_vote_count);
 
-done:
 	mutex_unlock(&priv->vote_lock);
 	pm_runtime_set_autosuspend_delay(priv->dev, BOLERO_AUTO_SUSPEND_DELAY);
 	return 0;
+err:
+	mutex_unlock(&priv->vote_lock);
+	return ret;
 }
 EXPORT_SYMBOL(bolero_runtime_resume);
 
