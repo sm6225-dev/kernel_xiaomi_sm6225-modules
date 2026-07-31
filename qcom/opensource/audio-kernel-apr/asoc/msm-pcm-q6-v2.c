@@ -2451,6 +2451,11 @@ static int msm_pcm_add_channel_mixer_cfg_controls(
 		.private_value = 0,
 	};
 
+	/* Channel-mixer state is allocated only for Multimedia FE IDs. */
+	if (!rtd || !rtd->dai_link ||
+	    rtd->dai_link->id > MSM_FRONTEND_DAI_MM_MAX_ID)
+		return 0;
+
 	component = snd_soc_rtdcom_lookup(rtd, DRV_NAME);
 	if (!component) {
 		pr_err("%s: component is NULL\n", __func__);
@@ -2546,6 +2551,11 @@ static int msm_pcm_add_channel_mixer_controls(struct snd_soc_pcm_runtime *rtd)
 	struct snd_pcm *pcm = NULL;
 	struct msm_plat_data *pdata = NULL;
 	struct snd_soc_component *component = NULL;
+
+	/* pcm_device/chmixer_pspd are Multimedia-FE-sized arrays. */
+	if (!rtd || !rtd->dai_link ||
+	    rtd->dai_link->id > MSM_FRONTEND_DAI_MM_MAX_ID)
+		return 0;
 
 	if (!rtd || !rtd->pcm) {
 		pr_err("%s invalid rtd or pcm\n", __func__);
@@ -2711,8 +2721,74 @@ static snd_pcm_sframes_t __maybe_unused msm_pcm_delay_blk(struct snd_pcm_substre
 	return frames;
 }
 
+static int msm_pcm_component_open(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_pcm_open(substream);
+}
+
+static int msm_pcm_component_close(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_pcm_close(substream);
+}
+
+static int msm_pcm_component_ioctl(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream, unsigned int cmd, void *arg)
+{
+	return msm_pcm_ioctl(substream, cmd, arg);
+}
+
+static int msm_pcm_component_hw_params(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream,
+		struct snd_pcm_hw_params *params)
+{
+	return msm_pcm_hw_params(substream, params);
+}
+
+static int msm_pcm_component_prepare(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_pcm_prepare(substream);
+}
+
+static int msm_pcm_component_trigger(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream, int cmd)
+{
+	return msm_pcm_trigger(substream, cmd);
+}
+
+static snd_pcm_uframes_t msm_pcm_component_pointer(
+		struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_pcm_pointer(substream);
+}
+
+static int msm_pcm_component_copy_user(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream, int channel,
+		unsigned long pos, void __user *buf, unsigned long bytes)
+{
+	return msm_pcm_copy(substream, channel, pos, buf, bytes);
+}
+
+static int msm_pcm_component_mmap(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream, struct vm_area_struct *vma)
+{
+	return msm_pcm_mmap(substream, vma);
+}
+
 static struct snd_soc_component_driver msm_soc_component = {
 	.name		= DRV_NAME,
+	.open		= msm_pcm_component_open,
+	.close		= msm_pcm_component_close,
+	.ioctl		= msm_pcm_component_ioctl,
+	.hw_params	= msm_pcm_component_hw_params,
+	.prepare	= msm_pcm_component_prepare,
+	.trigger	= msm_pcm_component_trigger,
+	.pointer	= msm_pcm_component_pointer,
+	.copy_user	= msm_pcm_component_copy_user,
+	.mmap		= msm_pcm_component_mmap,
 	.pcm_construct	= msm_asoc_pcm_new,
 };
 

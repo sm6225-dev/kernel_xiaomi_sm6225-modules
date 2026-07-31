@@ -2535,7 +2535,7 @@ static int swrm_master_init(struct swr_mstr_ctrl *swrm)
 				__func__,
 				reg[i], swr_master_read(swrm, reg[i]));
 		}
-		return -EINVAL;
+		/* Fall through to match 4.19 behavior */
 	}
 	/*
 	 * For SWR master version 1.5.1, continue
@@ -2879,7 +2879,13 @@ static int swrm_probe(struct platform_device *pdev)
 	 */
 	swr_master_add_boarddevices(&swrm->master);
 	mutex_lock(&swrm->mlock);
-	swrm_clk_request(swrm, true);
+	ret = swrm_clk_request(swrm, true);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "%s: clk request failed, err %d\n", __func__, ret);
+		mutex_unlock(&swrm->mlock);
+		ret = -EPROBE_DEFER;
+		goto err_mstr_init_fail;
+	}
 	swrm_hw_ver = swr_master_read(swrm, SWRM_COMP_HW_VERSION);
 	if (swrm->version != swrm_hw_ver)
 		dev_info(&pdev->dev,

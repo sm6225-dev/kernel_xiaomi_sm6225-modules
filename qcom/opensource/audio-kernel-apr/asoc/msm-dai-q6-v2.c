@@ -833,17 +833,24 @@ static int msm_dai_q6_dai_add_route(struct snd_soc_dai *dai)
 				__func__, dai->driver->playback.stream_name);
 		intercon.source = dai->driver->playback.stream_name;
 		intercon.sink = dai->driver->playback.stream_name;
+		/* ASoC 5.15 rejects the legacy self-route and overwrites the
+		 * backend widget, which prevents DPCM from finding the BE. */
+		if (!strcmp(intercon.source, intercon.sink))
+			goto capture_route;
 		dev_dbg(dai->dev, "%s: src %s sink %s\n",
 				__func__, intercon.source, intercon.sink);
 		snd_soc_dapm_add_routes(dapm, &intercon, 1);
 		snd_soc_dapm_ignore_suspend(dapm, intercon.sink);
 	}
+	capture_route:
 	if (dai->driver->capture.stream_name &&
 		dai->driver->capture.stream_name) {
 		dev_dbg(dai->dev, "%s: add route for widget %s",
 				__func__, dai->driver->capture.stream_name);
 		intercon.sink = dai->driver->capture.stream_name;
 		intercon.source = dai->driver->capture.stream_name;
+		if (!strcmp(intercon.source, intercon.sink))
+			return 0;
 		dev_dbg(dai->dev, "%s: src %s sink %s\n",
 				__func__, intercon.source, intercon.sink);
 		snd_soc_dapm_add_routes(dapm, &intercon, 1);
@@ -4122,7 +4129,6 @@ static struct snd_soc_dai_driver msm_dai_q6_afe_rx_dai[] = {
 	{
 		.playback = {
 			.stream_name = "AFE Playback",
-			.stream_name = "PCM_RX",
 			.rates = SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_8000 |
 			SNDRV_PCM_RATE_16000,
 			.formats = SNDRV_PCM_FMTBIT_S16_LE |
@@ -4184,7 +4190,6 @@ static struct snd_soc_dai_driver msm_dai_q6_afe_tx_dai[] = {
 	{
 		.capture = {
 			.stream_name = "AFE Capture",
-			.stream_name = "PCM_TX",
 			.rates = SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_8000 |
 			SNDRV_PCM_RATE_16000,
 			.formats = SNDRV_PCM_FMTBIT_S16_LE,
@@ -4307,7 +4312,6 @@ static struct snd_soc_dai_driver msm_dai_q6_voc_playback_dai[] = {
 	{
 		.playback = {
 			.stream_name = "Voice Farend Playback",
-			.stream_name = "VOICE_PLAYBACK_TX",
 			.rates = SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_8000 |
 				 SNDRV_PCM_RATE_16000,
 			.formats = SNDRV_PCM_FMTBIT_S16_LE,
@@ -4324,7 +4328,6 @@ static struct snd_soc_dai_driver msm_dai_q6_voc_playback_dai[] = {
 	{
 		.playback = {
 			.stream_name = "Voice2 Farend Playback",
-			.stream_name = "VOICE2_PLAYBACK_TX",
 			.rates = SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_8000 |
 				 SNDRV_PCM_RATE_16000,
 			.formats = SNDRV_PCM_FMTBIT_S16_LE,
@@ -4344,7 +4347,6 @@ static struct snd_soc_dai_driver msm_dai_q6_incall_record_dai[] = {
 	{
 		.capture = {
 			.stream_name = "Voice Uplink Capture",
-			.stream_name = "INCALL_RECORD_TX",
 			.rates = SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_8000 |
 			SNDRV_PCM_RATE_16000,
 			.formats = SNDRV_PCM_FMTBIT_S16_LE,
@@ -4361,7 +4363,6 @@ static struct snd_soc_dai_driver msm_dai_q6_incall_record_dai[] = {
 	{
 		.capture = {
 			.stream_name = "Voice Downlink Capture",
-			.stream_name = "INCALL_RECORD_RX",
 			.rates = SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_8000 |
 			SNDRV_PCM_RATE_16000,
 			.formats = SNDRV_PCM_FMTBIT_S16_LE,
@@ -4763,7 +4764,6 @@ static struct snd_soc_dai_driver msm_dai_q6_slimbus_rx_dai[] = {
 	{
 		.playback = {
 			.stream_name = "Slimbus Playback",
-			.stream_name = "SLIMBUS_0_RX",
 			.rates = SNDRV_PCM_RATE_8000_384000,
 			.formats = DAI_FORMATS_S16_S24_S32_LE,
 			.channels_min = 1,
@@ -4779,7 +4779,6 @@ static struct snd_soc_dai_driver msm_dai_q6_slimbus_rx_dai[] = {
 	{
 		.playback = {
 			.stream_name = "Slimbus1 Playback",
-			.stream_name = "SLIMBUS_1_RX",
 			.rates = SNDRV_PCM_RATE_8000_384000,
 			.formats = DAI_FORMATS_S16_S24_S32_LE,
 			.channels_min = 1,
@@ -4795,7 +4794,6 @@ static struct snd_soc_dai_driver msm_dai_q6_slimbus_rx_dai[] = {
 	{
 		.playback = {
 			.stream_name = "Slimbus2 Playback",
-			.stream_name = "SLIMBUS_2_RX",
 			.rates = SNDRV_PCM_RATE_8000_384000,
 			.formats = DAI_FORMATS_S16_S24_S32_LE,
 			.channels_min = 1,
@@ -4811,7 +4809,6 @@ static struct snd_soc_dai_driver msm_dai_q6_slimbus_rx_dai[] = {
 	{
 		.playback = {
 			.stream_name = "Slimbus3 Playback",
-			.stream_name = "SLIMBUS_3_RX",
 			.rates = SNDRV_PCM_RATE_8000_384000,
 			.formats = DAI_FORMATS_S16_S24_S32_LE,
 			.channels_min = 1,
@@ -4827,7 +4824,6 @@ static struct snd_soc_dai_driver msm_dai_q6_slimbus_rx_dai[] = {
 	{
 		.playback = {
 			.stream_name = "Slimbus4 Playback",
-			.stream_name = "SLIMBUS_4_RX",
 			.rates = SNDRV_PCM_RATE_8000_384000,
 			.formats = DAI_FORMATS_S16_S24_S32_LE,
 			.channels_min = 1,
@@ -4843,7 +4839,6 @@ static struct snd_soc_dai_driver msm_dai_q6_slimbus_rx_dai[] = {
 	{
 		.playback = {
 			.stream_name = "Slimbus6 Playback",
-			.stream_name = "SLIMBUS_6_RX",
 			.rates = SNDRV_PCM_RATE_8000_384000,
 			.formats = DAI_FORMATS_S16_S24_S32_LE,
 			.channels_min = 1,
@@ -4859,7 +4854,6 @@ static struct snd_soc_dai_driver msm_dai_q6_slimbus_rx_dai[] = {
 	{
 		.playback = {
 			.stream_name = "Slimbus5 Playback",
-			.stream_name = "SLIMBUS_5_RX",
 			.rates = SNDRV_PCM_RATE_8000_384000,
 			.formats = DAI_FORMATS_S16_S24_S32_LE,
 			.channels_min = 1,
@@ -4875,7 +4869,6 @@ static struct snd_soc_dai_driver msm_dai_q6_slimbus_rx_dai[] = {
 	{
 		.playback = {
 			.stream_name = "Slimbus7 Playback",
-			.stream_name = "SLIMBUS_7_RX",
 			.rates = SNDRV_PCM_RATE_8000_384000,
 			.formats = DAI_FORMATS_S16_S24_S32_LE,
 			.channels_min = 1,
@@ -4891,7 +4884,6 @@ static struct snd_soc_dai_driver msm_dai_q6_slimbus_rx_dai[] = {
 	{
 		.playback = {
 			.stream_name = "Slimbus8 Playback",
-			.stream_name = "SLIMBUS_8_RX",
 			.rates = SNDRV_PCM_RATE_8000_384000,
 			.formats = DAI_FORMATS_S16_S24_S32_LE,
 			.channels_min = 1,
@@ -4907,7 +4899,6 @@ static struct snd_soc_dai_driver msm_dai_q6_slimbus_rx_dai[] = {
 	{
 		.playback = {
 			.stream_name = "Slimbus9 Playback",
-			.stream_name = "SLIMBUS_9_RX",
 			.rates = SNDRV_PCM_RATE_8000_384000,
 			.formats = DAI_FORMATS_S16_S24_S32_LE,
 			.channels_min = 1,
@@ -4926,7 +4917,6 @@ static struct snd_soc_dai_driver msm_dai_q6_slimbus_tx_dai[] = {
 	{
 		.capture = {
 			.stream_name = "Slimbus Capture",
-			.stream_name = "SLIMBUS_0_TX",
 			.rates = SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_8000 |
 			SNDRV_PCM_RATE_16000 | SNDRV_PCM_RATE_96000 |
 			SNDRV_PCM_RATE_192000,
@@ -4946,7 +4936,6 @@ static struct snd_soc_dai_driver msm_dai_q6_slimbus_tx_dai[] = {
 	{
 		.capture = {
 			.stream_name = "Slimbus1 Capture",
-			.stream_name = "SLIMBUS_1_TX",
 			.rates = SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000 |
 			SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_96000 |
 			SNDRV_PCM_RATE_192000,
@@ -4966,7 +4955,6 @@ static struct snd_soc_dai_driver msm_dai_q6_slimbus_tx_dai[] = {
 	{
 		.capture = {
 			.stream_name = "Slimbus2 Capture",
-			.stream_name = "SLIMBUS_2_TX",
 			.rates = SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_8000 |
 			SNDRV_PCM_RATE_16000 | SNDRV_PCM_RATE_96000 |
 			SNDRV_PCM_RATE_192000,
@@ -4985,7 +4973,6 @@ static struct snd_soc_dai_driver msm_dai_q6_slimbus_tx_dai[] = {
 	{
 		.capture = {
 			.stream_name = "Slimbus3 Capture",
-			.stream_name = "SLIMBUS_3_TX",
 			.rates = SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000 |
 			SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_96000 |
 			SNDRV_PCM_RATE_192000,
@@ -5004,7 +4991,6 @@ static struct snd_soc_dai_driver msm_dai_q6_slimbus_tx_dai[] = {
 	{
 		.capture = {
 			.stream_name = "Slimbus4 Capture",
-			.stream_name = "SLIMBUS_4_TX",
 			.rates = SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000 |
 			SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_96000 |
 			SNDRV_PCM_RATE_192000,
@@ -5024,7 +5010,6 @@ static struct snd_soc_dai_driver msm_dai_q6_slimbus_tx_dai[] = {
 	{
 		.capture = {
 			.stream_name = "Slimbus5 Capture",
-			.stream_name = "SLIMBUS_5_TX",
 			.rates = SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_8000 |
 			SNDRV_PCM_RATE_16000 | SNDRV_PCM_RATE_96000 |
 			SNDRV_PCM_RATE_192000,
@@ -5043,7 +5028,6 @@ static struct snd_soc_dai_driver msm_dai_q6_slimbus_tx_dai[] = {
 	{
 		.capture = {
 			.stream_name = "Slimbus6 Capture",
-			.stream_name = "SLIMBUS_6_TX",
 			.rates = SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000 |
 			SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_96000 |
 			SNDRV_PCM_RATE_192000,
@@ -5062,7 +5046,6 @@ static struct snd_soc_dai_driver msm_dai_q6_slimbus_tx_dai[] = {
 	{
 		.capture = {
 			.stream_name = "Slimbus7 Capture",
-			.stream_name = "SLIMBUS_7_TX",
 			.rates = SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000 |
 			SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_96000 |
 			SNDRV_PCM_RATE_192000,
@@ -5082,7 +5065,6 @@ static struct snd_soc_dai_driver msm_dai_q6_slimbus_tx_dai[] = {
 	{
 		.capture = {
 			.stream_name = "Slimbus8 Capture",
-			.stream_name = "SLIMBUS_8_TX",
 			.rates = SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000 |
 			SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_96000 |
 			SNDRV_PCM_RATE_192000,
@@ -5102,7 +5084,6 @@ static struct snd_soc_dai_driver msm_dai_q6_slimbus_tx_dai[] = {
 	{
 		.capture = {
 			.stream_name = "Slimbus9 Capture",
-			.stream_name = "SLIMBUS_9_TX",
 			.rates = SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000 |
 			SNDRV_PCM_RATE_44100 | SNDRV_PCM_RATE_48000 |
 			SNDRV_PCM_RATE_88200 | SNDRV_PCM_RATE_96000 |
@@ -12389,6 +12370,11 @@ static int msm_dai_q6_cdc_dma_set_channel_map(struct snd_soc_dai *dai,
 		dev_err(dai->dev, "%s: invalid dai id %d\n", __func__, dai->id);
 		return -EINVAL;
 	}
+
+	/* Some 5.15 codec components return the channel count but leave the
+	 * legacy CDC-DMA mask empty.  The 4.19 ADSP rejects that AFE config. */
+	if (!ch_mask && ch_num)
+		ch_mask = (1U << ch_num) - 1;
 
 	dai_data->port_config.cdc_dma.active_channels_mask = ch_mask;
 	dev_dbg(dai->dev, "%s: CDC_DMA_%d_ch cnt[%d] ch mask[0x%x]\n", __func__,

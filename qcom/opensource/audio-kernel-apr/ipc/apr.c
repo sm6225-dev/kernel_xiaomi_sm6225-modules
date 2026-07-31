@@ -260,7 +260,8 @@ static void apr_modem_up(void)
 
 enum apr_subsys_state apr_get_q6_state(void)
 {
-	return atomic_read(&q6.q6_state);
+        //return atomic_read(&q6.q6_state);
+        return APR_SUBSYS_LOADED;
 }
 EXPORT_SYMBOL(apr_get_q6_state);
 
@@ -505,10 +506,10 @@ struct apr_svc *apr_register(char *dest, char *svc_name, apr_fn svc_fn,
 	dest_id = apr_get_dest_id(dest);
 
 	if (dest_id == APR_DEST_QDSP6) {
-		if (apr_get_q6_state() != APR_SUBSYS_LOADED) {
-			pr_err_ratelimited("%s: adsp not up\n", __func__);
-			return NULL;
-		}
+		//if (apr_get_q6_state() != APR_SUBSYS_LOADED) {
+		//      pr_err_ratelimited("%s: adsp not up\n", __func__);
+		//      return NULL;
+		//}
 		pr_debug("%s: adsp Up\n", __func__);
 	} else if (dest_id == APR_DEST_MODEM) {
 		if (apr_get_modem_state() == APR_SUBSYS_DOWN) {
@@ -1242,7 +1243,34 @@ static struct platform_driver apr_driver = {
 	}
 };
 
-module_platform_driver(apr_driver);
+static int __init apr_init(void)
+{
+        int i, j, k;
+
+        for (i = 0; i < APR_DEST_MAX; i++)
+                for (j = 0; j < APR_CLIENT_MAX; j++) {
+                        mutex_init(&client[i][j].m_lock);
+                        for (k = 0; k < APR_SVC_MAX; k++) {
+                                mutex_init(&client[i][j].svc[k].m_lock);
+                                spin_lock_init(&client[i][j].svc[k].w_lock);
+                        }
+                }
+        mutex_init(&q6.lock);
+        init_waitqueue_head(&modem_wait);
+        apr_reset_workqueue = create_singlethread_workqueue("apr_driver");
+        apr_tal_init();
+
+        return platform_driver_register(&apr_driver);
+}
+
+static void __exit apr_exit(void)
+{
+        platform_driver_unregister(&apr_driver);
+        apr_tal_exit();
+}
+
+module_init(apr_init);
+module_exit(apr_exit);
 
 MODULE_DESCRIPTION("APR DRIVER");
 MODULE_LICENSE("GPL v2");

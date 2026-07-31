@@ -4,6 +4,7 @@
  * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
+#include <ipc/apr.h>
 #include <linux/gpio.h>
 #include <linux/io.h>
 #include <linux/module.h>
@@ -157,7 +158,7 @@ static int lpi_gpio_read(struct lpi_gpio_pad *pad, unsigned int addr)
 	}
 	pm_runtime_get_sync(lpi_dev);
 	mutex_lock(&state->core_hw_vote_lock);
-	if (!state->core_hw_vote_status) {
+	if ((state->lpass_core_hw_vote != NULL || state->lpass_audio_hw_vote != NULL) && !state->core_hw_vote_status) {
 		pr_err_ratelimited("%s: core hw vote clk is not enabled\n",
 				__func__);
 		ret = -EINVAL;
@@ -188,7 +189,7 @@ static int lpi_gpio_write(struct lpi_gpio_pad *pad, unsigned int addr,
 	}
 	pm_runtime_get_sync(lpi_dev);
 	mutex_lock(&state->core_hw_vote_lock);
-	if (!state->core_hw_vote_status) {
+	if ((state->lpass_core_hw_vote != NULL || state->lpass_audio_hw_vote != NULL) && !state->core_hw_vote_status) {
 		pr_err_ratelimited("%s: core hw vote clk is not enabled\n",
 				__func__);
 		ret = -EINVAL;
@@ -812,6 +813,8 @@ static int lpi_pinctrl_probe(struct platform_device *pdev)
 	lpass_core_hw_vote = devm_clk_get(&pdev->dev, "lpass_core_hw_vote");
 	if (IS_ERR(lpass_core_hw_vote)) {
 		ret = PTR_ERR(lpass_core_hw_vote);
+		if (ret == -EPROBE_DEFER)
+			goto err_snd_evt;
 		dev_dbg(&pdev->dev, "%s: clk get %s failed %d\n",
 			__func__, "lpass_core_hw_vote", ret);
 		lpass_core_hw_vote = NULL;
@@ -823,6 +826,8 @@ static int lpi_pinctrl_probe(struct platform_device *pdev)
 	lpass_audio_hw_vote = devm_clk_get(&pdev->dev, "lpass_audio_hw_vote");
 	if (IS_ERR(lpass_audio_hw_vote)) {
 		ret = PTR_ERR(lpass_audio_hw_vote);
+		if (ret == -EPROBE_DEFER)
+			goto err_snd_evt;
 		dev_dbg(&pdev->dev, "%s: clk get %s failed %d\n",
 			__func__, "lpass_audio_hw_vote", ret);
 		lpass_audio_hw_vote = NULL;
@@ -839,6 +844,7 @@ static int lpi_pinctrl_probe(struct platform_device *pdev)
 	return 0;
 
 err_snd_evt:
+	snd_event_client_deregister(dev);
 	audio_notifier_deregister("lpi_tlmm");
 err_range:
 	gpiochip_remove(&state->chip);
