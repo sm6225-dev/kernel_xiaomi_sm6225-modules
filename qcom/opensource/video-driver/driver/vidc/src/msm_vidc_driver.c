@@ -4764,6 +4764,7 @@ int msm_vidc_core_init(struct msm_vidc_core *core)
 	core->ssr.trigger = false;
 	core->pm_suspended = false;
 
+	reinit_completion(&core->init_done);
 	rc = venus_hfi_core_init(core);
 	if (rc) {
 		d_vpr_e("%s: core init failed\n", __func__);

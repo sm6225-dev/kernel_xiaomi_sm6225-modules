@@ -1733,26 +1733,18 @@ static void __deinit_regulators(struct msm_vidc_core *core)
 
 static int __init_regulators(struct msm_vidc_core *core)
 {
-	int rc = 0;
 	struct regulator_info *rinfo = NULL;
 
 	venus_hfi_for_each_regulator(core, rinfo) {
 		rinfo->regulator = regulator_get(&core->pdev->dev,
 				rinfo->name);
 		if (IS_ERR_OR_NULL(rinfo->regulator)) {
-			rc = PTR_ERR(rinfo->regulator) ?
-				PTR_ERR(rinfo->regulator) : -EBADHANDLE;
-			d_vpr_e("Failed to get regulator: %s\n", rinfo->name);
+			d_vpr_h("Regulator %s not found or optional, continuing\n", rinfo->name);
 			rinfo->regulator = NULL;
-			goto err_reg_get;
 		}
 	}
 
 	return 0;
-
-err_reg_get:
-	__deinit_regulators(core);
-	return rc;
 }
 
 static void __deinit_subcaches(struct msm_vidc_core *core)
@@ -2696,6 +2688,11 @@ irqreturn_t venus_hfi_isr_handler(int irq, void *data)
 	}
 
 	core_lock(core, __func__);
+	if (!__core_in_valid_state(core)) {
+		d_vpr_h("%s: core is in DEINIT state, skipping\n", __func__);
+		core_unlock(core, __func__);
+		goto exit;
+	}
 	rc = __resume(core);
 	if (rc) {
 		d_vpr_e("%s: Power on failed\n", __func__);
