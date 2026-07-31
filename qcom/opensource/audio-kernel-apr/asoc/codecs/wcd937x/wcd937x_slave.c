@@ -9,6 +9,7 @@
 #include <linux/device.h>
 #include <linux/kernel.h>
 #include <linux/component.h>
+#include <linux/delay.h>
 #include <soc/soundwire.h>
 
 struct wcd937x_slave_priv {
@@ -18,7 +19,7 @@ struct wcd937x_slave_priv {
 static int wcd937x_slave_bind(struct device *dev,
 				struct device *master, void *data)
 {
-	int ret = 0;
+	int ret = 0, i;
 	struct wcd937x_slave_priv *wcd937x_slave = NULL;
 	uint8_t devnum = 0;
 	struct swr_device *pdev = to_swr_device(dev);
@@ -37,13 +38,18 @@ static int wcd937x_slave_bind(struct device *dev,
 
 	wcd937x_slave->swr_slave = pdev;
 
-	ret = swr_get_logical_dev_num(pdev, pdev->addr, &devnum);
+	for (i = 0; i < 5000; i++) {
+		ret = swr_get_logical_dev_num(pdev, pdev->addr, &devnum);
+		if (!ret)
+			break;
+		msleep(20);
+	}
+
 	if (ret) {
-		dev_dbg(&pdev->dev,
+		dev_err(&pdev->dev,
 				"%s get devnum %d for dev addr %lx failed\n",
 				__func__, devnum, pdev->addr);
-		swr_remove_device(pdev);
-		return ret;
+		return -EPROBE_DEFER;
 	}
 	pdev->dev_num = devnum;
 

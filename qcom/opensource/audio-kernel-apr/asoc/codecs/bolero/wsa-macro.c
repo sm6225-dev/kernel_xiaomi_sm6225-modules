@@ -3266,6 +3266,8 @@ static int wsa_macro_remove(struct platform_device *pdev)
 	if (!wsa_priv)
 		return -EINVAL;
 
+	cancel_work_sync(&wsa_priv->wsa_macro_add_child_devices_work);
+
 	for (count = 0; count < wsa_priv->child_count &&
 		count < WSA_MACRO_CHILD_DEVICES_MAX; count++)
 		platform_device_unregister(wsa_priv->pdev_child_devices[count]);

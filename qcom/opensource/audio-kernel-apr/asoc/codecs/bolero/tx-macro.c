@@ -3316,6 +3316,7 @@ static int tx_macro_remove(struct platform_device *pdev)
 		return -EINVAL;
 
 	if (tx_priv->is_used_tx_swr_gpio) {
+		cancel_work_sync(&tx_priv->tx_macro_add_child_devices_work);
 		if (tx_priv->swr_ctrl_data)
 			kfree(tx_priv->swr_ctrl_data);
 		for (count = 0; count < tx_priv->child_count &&
