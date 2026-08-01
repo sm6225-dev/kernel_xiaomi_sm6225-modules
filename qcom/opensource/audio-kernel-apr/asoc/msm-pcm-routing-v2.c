@@ -31628,9 +31628,23 @@ void msm_routing_pcm_free(struct snd_pcm *pcm)
 	msm_pcm_routing_hwdep_free(pcm);
 }
 
+static int msm_routing_pcm_construct(struct snd_soc_component *component,
+				     struct snd_soc_pcm_runtime *runtime)
+{
+	return msm_routing_pcm_new(runtime);
+}
+
+static void msm_routing_pcm_destruct(struct snd_soc_component *component,
+				    struct snd_pcm *pcm)
+{
+	msm_routing_pcm_free(pcm);
+}
+
 static struct snd_soc_component_driver msm_soc_routing_component = {
 	.name		= DRV_NAME,
 	.probe		= msm_routing_probe,
+	.pcm_construct	= msm_routing_pcm_construct,
+	.pcm_destruct	= msm_routing_pcm_destruct,
 };
 
 static int msm_routing_pcm_probe(struct platform_device *pdev)
