@@ -31418,11 +31418,31 @@ static const struct snd_kcontrol_new
 		},
 };
 
-static const struct snd_pcm_ops msm_routing_pcm_ops = {
-	.hw_params	= msm_pcm_routing_hw_params,
-	.close          = msm_pcm_routing_close,
-	.prepare        = msm_pcm_routing_prepare,
-};
+/*
+ * snd_soc_component_driver::ops was removed before 5.15.  Keep the legacy
+ * routing PCM callbacks wired into the component API: these callbacks mark a
+ * backend active and create/tear down its ADM COPP and matrix connection.
+ * Without them AFE can start while ASM has no route to the device.
+ */
+static int msm_routing_component_hw_params(
+		struct snd_soc_component *component,
+		struct snd_pcm_substream *substream,
+		struct snd_pcm_hw_params *params)
+{
+	return msm_pcm_routing_hw_params(substream, params);
+}
+
+static int msm_routing_component_prepare(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_pcm_routing_prepare(substream);
+}
+
+static int msm_routing_component_close(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_pcm_routing_close(substream);
+}
 
 #ifdef CONFIG_DOA_PARAMS_ENABLED
 void msm_routing_add_doa_control(struct snd_soc_component *component)
@@ -31628,9 +31648,26 @@ void msm_routing_pcm_free(struct snd_pcm *pcm)
 	msm_pcm_routing_hwdep_free(pcm);
 }
 
+static int msm_routing_pcm_construct(struct snd_soc_component *component,
+				     struct snd_soc_pcm_runtime *runtime)
+{
+	return msm_routing_pcm_new(runtime);
+}
+
+static void msm_routing_pcm_destruct(struct snd_soc_component *component,
+				    struct snd_pcm *pcm)
+{
+	msm_routing_pcm_free(pcm);
+}
+
 static struct snd_soc_component_driver msm_soc_routing_component = {
 	.name		= DRV_NAME,
 	.probe		= msm_routing_probe,
+	.hw_params	= msm_routing_component_hw_params,
+	.prepare	= msm_routing_component_prepare,
+	.close		= msm_routing_component_close,
+	.pcm_construct	= msm_routing_pcm_construct,
+	.pcm_destruct	= msm_routing_pcm_destruct,
 };
 
 static int msm_routing_pcm_probe(struct platform_device *pdev)
