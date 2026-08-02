@@ -2246,6 +2246,18 @@ static char *aw_profile[] = {"Music", "Voice", "Voip",
 static int aw87xxx_spk_mode;
 static int aw87xxx_rcv_mode;
 
+void wcd937x_set_aw87xxx_spk_mode(int mode)
+{
+	aw87xxx_spk_mode = mode;
+}
+EXPORT_SYMBOL_GPL(wcd937x_set_aw87xxx_spk_mode);
+
+void wcd937x_set_aw87xxx_rcv_mode(int mode)
+{
+	aw87xxx_rcv_mode = mode;
+}
+EXPORT_SYMBOL_GPL(wcd937x_set_aw87xxx_rcv_mode);
+
 /* copy from aw_acf_bin.h */
 enum aw_bin_dev_profile_id {
 	AW_PROFILE_MUSIC = 0x0000,

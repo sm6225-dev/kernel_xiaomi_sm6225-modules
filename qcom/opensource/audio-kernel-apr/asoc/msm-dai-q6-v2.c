@@ -833,17 +833,24 @@ static int msm_dai_q6_dai_add_route(struct snd_soc_dai *dai)
 				__func__, dai->driver->playback.stream_name);
 		intercon.source = dai->driver->playback.stream_name;
 		intercon.sink = dai->driver->playback.stream_name;
+		/* ASoC 5.15 rejects the legacy self-route and overwrites the
+		 * backend widget, which prevents DPCM from finding the BE. */
+		if (!strcmp(intercon.source, intercon.sink))
+			goto capture_route;
 		dev_dbg(dai->dev, "%s: src %s sink %s\n",
 				__func__, intercon.source, intercon.sink);
 		snd_soc_dapm_add_routes(dapm, &intercon, 1);
 		snd_soc_dapm_ignore_suspend(dapm, intercon.sink);
 	}
+	capture_route:
 	if (dai->driver->capture.stream_name &&
 		dai->driver->capture.stream_name) {
 		dev_dbg(dai->dev, "%s: add route for widget %s",
 				__func__, dai->driver->capture.stream_name);
 		intercon.sink = dai->driver->capture.stream_name;
 		intercon.source = dai->driver->capture.stream_name;
+		if (!strcmp(intercon.source, intercon.sink))
+			return 0;
 		dev_dbg(dai->dev, "%s: src %s sink %s\n",
 				__func__, intercon.source, intercon.sink);
 		snd_soc_dapm_add_routes(dapm, &intercon, 1);
@@ -12363,6 +12370,11 @@ static int msm_dai_q6_cdc_dma_set_channel_map(struct snd_soc_dai *dai,
 		dev_err(dai->dev, "%s: invalid dai id %d\n", __func__, dai->id);
 		return -EINVAL;
 	}
+
+	/* Some 5.15 codec components return the channel count but leave the
+	 * legacy CDC-DMA mask empty.  The 4.19 ADSP rejects that AFE config. */
+	if (!ch_mask && ch_num)
+		ch_mask = (1U << ch_num) - 1;
 
 	dai_data->port_config.cdc_dma.active_channels_mask = ch_mask;
 	dev_dbg(dai->dev, "%s: CDC_DMA_%d_ch cnt[%d] ch mask[0x%x]\n", __func__,
