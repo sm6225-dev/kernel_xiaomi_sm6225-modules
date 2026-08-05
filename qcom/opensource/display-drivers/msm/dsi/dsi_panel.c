@@ -665,6 +665,9 @@ int dsi_panel_set_backlight(struct dsi_panel *panel, u32 bl_lvl)
 #ifdef CONFIG_TARGET_PROJECT_K7T
         if (bl_lvl > 0)
                 bl_lvl = ea_panel_calc_backlight(bl_lvl);
+
+	if (!screen_on)
+		return 0;
 #endif
 
 	DSI_DEBUG("backlight type:%d lvl:%d\n", bl->type, bl_lvl);
