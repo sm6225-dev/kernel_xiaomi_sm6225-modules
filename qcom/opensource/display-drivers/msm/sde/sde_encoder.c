@@ -4698,9 +4698,6 @@ void sde_encoder_kickoff(struct drm_encoder *drm_enc, bool config_changed)
 	if (sde_enc->cur_master)
 		_sde_encoder_update_retire_txq(sde_enc->cur_master, sde_kms);
 
-	if (display->panel->panel_initialized) {
-		dsi_set_backlight_control(display->panel, display->panel->cur_mode);
-	}
 
 	/* All phys encs are ready to go, trigger the kickoff */
 	_sde_encoder_kickoff_phys(sde_enc, config_changed);

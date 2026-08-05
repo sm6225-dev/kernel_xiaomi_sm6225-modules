@@ -279,8 +279,6 @@ struct dsi_panel {
 	enum dsi_panel_physical_type panel_type;
 
 	struct dsi_panel_ops panel_ops;
-	struct delayed_work gamma_work;
-	u32 target_gamma_refresh_rate;
 	u32 dsi_refresh_flag;
     int hbm_mode;
 
