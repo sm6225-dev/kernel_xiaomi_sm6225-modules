@@ -3796,6 +3796,9 @@ struct dsi_panel *dsi_panel_get(struct device *parent,
 	drm_panel_add(&panel->drm_panel);
 
 	mutex_init(&panel->panel_lock);
+	panel->dsi_refresh_flag = 0;
+	panel->target_gamma_refresh_rate = 0;
+	INIT_DELAYED_WORK(&panel->gamma_work, dsi_panel_gamma_work);
 
 	return panel;
 error:
@@ -5071,6 +5074,8 @@ int dsi_panel_disable(struct dsi_panel *panel)
 		return -EINVAL;
 	}
 
+	cancel_delayed_work_sync(&panel->gamma_work);
+
 	if (panel->is_twm_en) {
 		DSI_DEBUG("TWM Enabled, skip panel disable\n");
 		return rc;
@@ -5164,39 +5169,49 @@ error:
 }
 
 
+static void dsi_panel_gamma_work(struct work_struct *work)
+{
+	struct dsi_panel *panel = container_of(work, struct dsi_panel, gamma_work.work);
+	int rc = 0;
+	u32 target = panel->target_gamma_refresh_rate;
+
+	mutex_lock(&panel->panel_lock);
+	if (!panel->panel_initialized) {
+		mutex_unlock(&panel->panel_lock);
+		return;
+	}
+
+	if (target == 90 && panel->dsi_refresh_flag != 90) {
+		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_BC_90HZ);
+		if (!rc) {
+			panel->dsi_refresh_flag = 90;
+			DSI_INFO("%s: refresh_rate = 90\n", __func__);
+		}
+	} else if (target == 60 && panel->dsi_refresh_flag != 60) {
+		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_BC_60HZ);
+		if (!rc) {
+			panel->dsi_refresh_flag = 60;
+			DSI_INFO("%s: refresh_rate = 60\n", __func__);
+		}
+	}
+	mutex_unlock(&panel->panel_lock);
+}
+
 void dsi_set_backlight_control(struct dsi_panel *panel,
 			 struct dsi_display_mode *adj_mode)
 {
-	int rc = 0;
-
 	if (!panel || !adj_mode) {
 		pr_err("Invalid params\n");
 		return;
 	}
 
-	mutex_lock(&panel->panel_lock);
-	if (adj_mode->timing.refresh_rate == 90) {
-		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_BC_90HZ);
-		if (rc)
-			pr_err("[%s][%s] failed to send DSI_CMD_SET_DISP_BC_90HZ cmd, rc=%d\n",
-					__func__, panel->name, rc);
-		else {
-			panel->dsi_refresh_flag = 90;
-			DSI_INFO("%s: refresh_rate = %d\n", __func__, adj_mode->timing.refresh_rate);
-		}
-	} else if (adj_mode->timing.refresh_rate == 60) {
-		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_BC_60HZ);
-		if (rc)
-			DSI_ERR("[%s][%s] failed to send DSI_CMD_SET_DISP_BC_60HZ cmd, rc=%d\n",
-					__func__, panel->name, rc);
-		else {
-			panel->dsi_refresh_flag = 60;
-			DSI_INFO("%s: refresh_rate = %d\n", __func__, adj_mode->timing.refresh_rate);
-		}
+	if (adj_mode->timing.refresh_rate == 90 && panel->target_gamma_refresh_rate != 90) {
+		panel->target_gamma_refresh_rate = 90;
+		schedule_delayed_work(&panel->gamma_work, msecs_to_jiffies(100));
+	} else if (adj_mode->timing.refresh_rate == 60 && panel->target_gamma_refresh_rate != 60) {
+		panel->target_gamma_refresh_rate = 60;
+		schedule_delayed_work(&panel->gamma_work, msecs_to_jiffies(100));
 	}
-	mutex_unlock(&panel->panel_lock);
-
-	return;
 }
 
 int dsi_panel_apply_hbm_mode(struct dsi_panel *panel)
