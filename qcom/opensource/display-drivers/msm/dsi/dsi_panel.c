@@ -50,6 +50,8 @@
 // ESD recovery
 extern void lcd_esd_enable(bool on);
 
+static void dsi_panel_gamma_work(struct work_struct *work);
+
 #ifdef CONFIG_TARGET_PROJECT_K7T
 static bool screen_on = true;
 #endif
