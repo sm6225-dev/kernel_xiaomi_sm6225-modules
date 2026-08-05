@@ -531,7 +531,7 @@ static int dsi_ctrl_check_state(struct dsi_ctrl *dsi_ctrl,
 		if (state->power_state == op_state) {
 			DSI_CTRL_ERR(dsi_ctrl, "No change in state, pwr_state=%d\n",
 					op_state);
-			rc = -EINVAL;
+			rc = -EALREADY;
 		} else if (state->power_state == DSI_CTRL_POWER_VREG_ON) {
 			if (state->vid_engine_state == DSI_CTRL_ENGINE_ON) {
 				DSI_CTRL_ERR(dsi_ctrl, "State error: op=%d: %d\n",
@@ -545,7 +545,7 @@ static int dsi_ctrl_check_state(struct dsi_ctrl *dsi_ctrl,
 		if (state->cmd_engine_state == op_state) {
 			DSI_CTRL_ERR(dsi_ctrl, "No change in state, cmd_state=%d\n",
 			       op_state);
-			rc = -EINVAL;
+			rc = -EALREADY;
 		} else if ((state->power_state != DSI_CTRL_POWER_VREG_ON) ||
 			   (state->controller_state != DSI_CTRL_ENGINE_ON)) {
 			DSI_CTRL_ERR(dsi_ctrl, "State error: op=%d: %d, %d\n",
@@ -559,7 +559,7 @@ static int dsi_ctrl_check_state(struct dsi_ctrl *dsi_ctrl,
 		if (state->vid_engine_state == op_state) {
 			DSI_CTRL_ERR(dsi_ctrl, "No change in state, cmd_state=%d\n",
 			       op_state);
-			rc = -EINVAL;
+			rc = -EALREADY;
 		} else if ((state->power_state != DSI_CTRL_POWER_VREG_ON) ||
 			   (state->controller_state != DSI_CTRL_ENGINE_ON)) {
 			DSI_CTRL_ERR(dsi_ctrl, "State error: op=%d: %d, %d\n",
@@ -573,7 +573,7 @@ static int dsi_ctrl_check_state(struct dsi_ctrl *dsi_ctrl,
 		if (state->controller_state == op_state) {
 			DSI_CTRL_ERR(dsi_ctrl, "No change in state, ctrl_state=%d\n",
 			       op_state);
-			rc = -EINVAL;
+			rc = -EALREADY;
 		} else if (state->power_state != DSI_CTRL_POWER_VREG_ON) {
 			DSI_CTRL_ERR(dsi_ctrl, "State error (link is off): op=%d:, %d\n",
 			       op_state,
@@ -3746,6 +3746,10 @@ int dsi_ctrl_set_power_state(struct dsi_ctrl *dsi_ctrl,
 
 	rc = dsi_ctrl_check_state(dsi_ctrl, DSI_CTRL_OP_POWER_STATE_CHANGE,
 				  state);
+	if (rc == -EALREADY) {
+		rc = 0;
+		goto error;
+	}
 	if (rc) {
 		DSI_CTRL_ERR(dsi_ctrl, "Controller state check failed, rc=%d\n",
 				rc);
@@ -3850,6 +3854,10 @@ int dsi_ctrl_set_host_engine_state(struct dsi_ctrl *dsi_ctrl,
 	mutex_lock(&dsi_ctrl->ctrl_lock);
 
 	rc = dsi_ctrl_check_state(dsi_ctrl, DSI_CTRL_OP_HOST_ENGINE, state);
+	if (rc == -EALREADY) {
+		rc = 0;
+		goto error;
+	}
 	if (rc) {
 		DSI_CTRL_ERR(dsi_ctrl, "Controller state check failed, rc=%d\n",
 				rc);
@@ -3906,6 +3914,10 @@ int dsi_ctrl_set_cmd_engine_state(struct dsi_ctrl *dsi_ctrl,
 	}
 
 	rc = dsi_ctrl_check_state(dsi_ctrl, DSI_CTRL_OP_CMD_ENGINE, state);
+	if (rc == -EALREADY) {
+		rc = 0;
+		goto error;
+	}
 	if (rc) {
 		DSI_CTRL_ERR(dsi_ctrl, "Controller state check failed, rc=%d\n", rc);
 		goto error;
@@ -3959,6 +3971,10 @@ int dsi_ctrl_set_vid_engine_state(struct dsi_ctrl *dsi_ctrl,
 	mutex_lock(&dsi_ctrl->ctrl_lock);
 
 	rc = dsi_ctrl_check_state(dsi_ctrl, DSI_CTRL_OP_VID_ENGINE, state);
+	if (rc == -EALREADY) {
+		rc = 0;
+		goto error;
+	}
 	if (rc) {
 		DSI_CTRL_ERR(dsi_ctrl, "Controller state check failed, rc=%d\n",
 				rc);
