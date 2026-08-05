@@ -285,6 +285,8 @@ static int dsi_panel_reset(struct dsi_panel *panel)
 		}
 	}
 
+	usleep_range(10000, 10010);
+
 	if (r_config->count) {
 		rc = gpio_direction_output(r_config->reset_gpio,
 			r_config->sequence[0].level);
@@ -2215,14 +2217,12 @@ static int dsi_panel_parse_misc_features(struct dsi_panel *panel)
 	const char *string;
 	int i, rc = 0;
 
-	panel->ulps_feature_enabled =
-		utils->read_bool(utils->data, "qcom,ulps-enabled");
+	panel->ulps_feature_enabled = false;
 
 	DSI_DEBUG("%s: ulps feature %s\n", __func__,
 		(panel->ulps_feature_enabled ? "enabled" : "disabled"));
 
-	panel->ulps_suspend_enabled =
-		utils->read_bool(utils->data, "qcom,suspend-ulps-enabled");
+	panel->ulps_suspend_enabled = false;
 
 	DSI_DEBUG("%s: ulps during suspend feature %s\n", __func__,
 		(panel->ulps_suspend_enabled ? "enabled" : "disabled"));
@@ -5057,6 +5057,7 @@ int dsi_panel_disable(struct dsi_panel *panel)
 
 	/* Avoid sending panel off commands when ESD recovery is underway */
 	if (!atomic_read(&panel->esd_recovery_pending)) {
+		panel->panel_initialized = false;
 		/*
 		 * Need to set IBB/AB regulator mode to STANDBY,
 		 * if panel is going off from AOD mode.
