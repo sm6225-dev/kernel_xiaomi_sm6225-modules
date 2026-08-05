@@ -532,18 +532,12 @@ static int dsi_ctrl_check_state(struct dsi_ctrl *dsi_ctrl,
 			DSI_CTRL_ERR(dsi_ctrl, "No change in state, pwr_state=%d\n",
 					op_state);
 			rc = -EINVAL;
-		} else if (state->power_state == DSI_CTRL_POWER_VREG_ON &&
-			   op_state == DSI_CTRL_POWER_VREG_OFF) {
+		} else if (state->power_state == DSI_CTRL_POWER_VREG_ON) {
 			if (state->vid_engine_state == DSI_CTRL_ENGINE_ON) {
-				DSI_CTRL_WARN(dsi_ctrl, "vid_engine active during power off, resetting\n");
-				state->vid_engine_state = DSI_CTRL_ENGINE_OFF;
-			}
-			if (state->cmd_engine_state == DSI_CTRL_ENGINE_ON) {
-				DSI_CTRL_WARN(dsi_ctrl, "cmd_engine active during power off, resetting\n");
-				state->cmd_engine_state = DSI_CTRL_ENGINE_OFF;
-			}
-			if (state->controller_state == DSI_CTRL_ENGINE_ON) {
-				state->controller_state = DSI_CTRL_ENGINE_OFF;
+				DSI_CTRL_ERR(dsi_ctrl, "State error: op=%d: %d\n",
+				       op_state,
+				       state->vid_engine_state);
+				rc = -EINVAL;
 			}
 		}
 		break;
