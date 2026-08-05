@@ -4994,6 +4994,9 @@ int dsi_panel_switch_cmd_mode_in(struct dsi_panel *panel)
 	return rc;
 }
 
+static void dsi_set_backlight_control_locked(struct dsi_panel *panel,
+			 struct dsi_display_mode *adj_mode);
+
 int dsi_panel_switch(struct dsi_panel *panel)
 {
 	int rc = 0;
@@ -5005,7 +5008,7 @@ int dsi_panel_switch(struct dsi_panel *panel)
 
 	mutex_lock(&panel->panel_lock);
 
-	dsi_set_backlight_control(panel, panel->cur_mode);
+	dsi_set_backlight_control_locked(panel, panel->cur_mode);
 
 	rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_TIMING_SWITCH);
 	if (rc)
@@ -5243,17 +5246,11 @@ error:
 }
 
 
-void dsi_set_backlight_control(struct dsi_panel *panel,
+static void dsi_set_backlight_control_locked(struct dsi_panel *panel,
 			 struct dsi_display_mode *adj_mode)
 {
 	int rc = 0;
 
-	if (!panel || !adj_mode) {
-		pr_err("Invalid params\n");
-		return;
-	}
-
-	mutex_lock(&panel->panel_lock);
 	if (adj_mode->timing.refresh_rate == 90 && panel->dsi_refresh_flag != 90) {
 		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_BC_90HZ);
 		if (rc)
@@ -5273,6 +5270,18 @@ void dsi_set_backlight_control(struct dsi_panel *panel,
 			DSI_INFO("%s: refresh_rate = %d\n", __func__, adj_mode->timing.refresh_rate);
 		}
 	}
+}
+
+void dsi_set_backlight_control(struct dsi_panel *panel,
+			 struct dsi_display_mode *adj_mode)
+{
+	if (!panel || !adj_mode) {
+		pr_err("Invalid params\n");
+		return;
+	}
+
+	mutex_lock(&panel->panel_lock);
+	dsi_set_backlight_control_locked(panel, adj_mode);
 	mutex_unlock(&panel->panel_lock);
 }
 
