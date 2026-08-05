@@ -43,6 +43,10 @@
 #define SEC_PANEL_NAME_MAX_LEN  256
 
 u8 dbgfs_tx_cmd_buf[SZ_4K];
+
+extern void dsi_set_backlight_control(struct dsi_panel *panel,
+			 struct dsi_display_mode *adj_mode);
+
 static char dsi_display_primary[MAX_CMDLINE_PARAM_LEN];
 static char dsi_display_secondary[MAX_CMDLINE_PARAM_LEN];
 static struct dsi_display_boot_param boot_displays[MAX_DSI_ACTIVE_DISPLAY] = {
@@ -8062,6 +8066,10 @@ int dsi_display_set_mode(struct dsi_display *display,
 	if (rc) {
 		DSI_ERR("[%s] failed to set mode\n", display->name);
 		goto error;
+	}
+
+	if (display->panel->panel_initialized && (adj_mode.timing.refresh_rate == 90)) {
+		dsi_set_backlight_control(display->panel, &adj_mode);
 	}
 
 	DSI_INFO("mdp_transfer_time=%d, hactive=%d, vactive=%d, fps=%d, clk_rate=%llu\n",

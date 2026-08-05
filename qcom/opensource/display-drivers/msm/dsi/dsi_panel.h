@@ -279,7 +279,7 @@ struct dsi_panel {
 	enum dsi_panel_physical_type panel_type;
 
 	struct dsi_panel_ops panel_ops;
-
+	u32 dsi_refresh_flag;
     int hbm_mode;
 
 };
@@ -419,6 +419,8 @@ void dsi_panel_destroy_cmd_packets(struct dsi_panel_cmd_set *set);
 
 void dsi_panel_dealloc_cmd_packets(struct dsi_panel_cmd_set *set);
 
+void dsi_set_backlight_control(struct dsi_panel *panel,
+			 struct dsi_display_mode *adj_mode);
 
 int dsi_panel_apply_hbm_mode(struct dsi_panel *panel);
 
