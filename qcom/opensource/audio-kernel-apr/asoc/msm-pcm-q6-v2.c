@@ -1841,7 +1841,7 @@ static int msm_pcm_add_chmap_controls(struct snd_soc_pcm_runtime *rtd)
 	return 0;
 }
 
-static int __maybe_unused msm_pcm_playback_app_type_cfg_ctl_put(struct snd_kcontrol *kcontrol,
+static int msm_pcm_playback_app_type_cfg_ctl_put(struct snd_kcontrol *kcontrol,
 					struct snd_ctl_elem_value *ucontrol)
 {
 	u64 fe_id = kcontrol->private_value;
@@ -1866,7 +1866,7 @@ static int __maybe_unused msm_pcm_playback_app_type_cfg_ctl_put(struct snd_kcont
 	return ret;
 }
 
-static int __maybe_unused msm_pcm_playback_app_type_cfg_ctl_get(struct snd_kcontrol *kcontrol,
+static int msm_pcm_playback_app_type_cfg_ctl_get(struct snd_kcontrol *kcontrol,
 					struct snd_ctl_elem_value *ucontrol)
 {
 	u64 fe_id = kcontrol->private_value;
@@ -1894,7 +1894,7 @@ done:
 	return ret;
 }
 
-static int __maybe_unused msm_pcm_capture_app_type_cfg_ctl_put(struct snd_kcontrol *kcontrol,
+static int msm_pcm_capture_app_type_cfg_ctl_put(struct snd_kcontrol *kcontrol,
 					struct snd_ctl_elem_value *ucontrol)
 {
 	u64 fe_id = kcontrol->private_value;
@@ -1919,7 +1919,7 @@ static int __maybe_unused msm_pcm_capture_app_type_cfg_ctl_put(struct snd_kcontr
 	return ret;
 }
 
-static int __maybe_unused msm_pcm_capture_app_type_cfg_ctl_get(struct snd_kcontrol *kcontrol,
+static int msm_pcm_capture_app_type_cfg_ctl_get(struct snd_kcontrol *kcontrol,
 					struct snd_ctl_elem_value *ucontrol)
 {
 	u64 fe_id = kcontrol->private_value;
@@ -1945,10 +1945,79 @@ static int __maybe_unused msm_pcm_capture_app_type_cfg_ctl_get(struct snd_kcontr
 		cfg_data.app_type, cfg_data.acdb_dev_id, cfg_data.sample_rate);
 done:
 	return ret;
+}
+
+static int msm_pcm_app_type_cfg_info(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_info *uinfo)
+{
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
+	uinfo->count = 4;
+	uinfo->value.integer.min = 0;
+	uinfo->value.integer.max = 0xFFFFFFFF;
+	return 0;
 }
 
 static int msm_pcm_add_app_type_controls(struct snd_soc_pcm_runtime *rtd)
 {
+	struct snd_soc_component *component = NULL;
+	char mixer_str[128];
+	struct snd_kcontrol_new fe_app_type_cfg_control[1] = {
+		{
+		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+		.access = SNDRV_CTL_ELEM_ACCESS_READWRITE,
+		.info = msm_pcm_app_type_cfg_info,
+		.private_value = 0,
+		}
+	};
+
+	if (!rtd) {
+		pr_err("%s NULL rtd\n", __func__);
+		return -EINVAL;
+	}
+
+	component = snd_soc_rtdcom_lookup(rtd, DRV_NAME);
+	if (!component) {
+		pr_err("%s: component is NULL\n", __func__);
+		return -EINVAL;
+	}
+
+	if (rtd->pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream) {
+		snprintf(mixer_str, sizeof(mixer_str),
+			"Audio Stream %d App Type Cfg",
+			 rtd->pcm->device);
+
+		fe_app_type_cfg_control[0].name = mixer_str;
+		fe_app_type_cfg_control[0].private_value = rtd->dai_link->id;
+
+		fe_app_type_cfg_control[0].put =
+				msm_pcm_playback_app_type_cfg_ctl_put;
+		fe_app_type_cfg_control[0].get =
+				msm_pcm_playback_app_type_cfg_ctl_get;
+
+		pr_debug("Registering new mixer ctl %s\n", mixer_str);
+		snd_soc_add_component_controls(component,
+					fe_app_type_cfg_control,
+					ARRAY_SIZE(fe_app_type_cfg_control));
+	}
+	if (rtd->pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream) {
+		snprintf(mixer_str, sizeof(mixer_str),
+			"Audio Stream Capture %d App Type Cfg",
+			 rtd->pcm->device);
+
+		fe_app_type_cfg_control[0].name = mixer_str;
+		fe_app_type_cfg_control[0].private_value = rtd->dai_link->id;
+
+		fe_app_type_cfg_control[0].put =
+				msm_pcm_capture_app_type_cfg_ctl_put;
+		fe_app_type_cfg_control[0].get =
+				msm_pcm_capture_app_type_cfg_ctl_get;
+
+		pr_debug("Registering new mixer ctl %s\n", mixer_str);
+		snd_soc_add_component_controls(component,
+					fe_app_type_cfg_control,
+					ARRAY_SIZE(fe_app_type_cfg_control));
+	}
+
 	return 0;
 }
 

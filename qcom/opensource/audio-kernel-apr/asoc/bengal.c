@@ -6672,6 +6672,27 @@ static int msm_audio_ssr_register(struct device *dev)
 	return ret;
 }
 
+static const struct snd_soc_dapm_route bengal_legacy_dapm_routes[] = {
+	{"TX SWR_MIC0", NULL, "ADC1_OUTPUT"},
+	{"TX SWR_MIC4", NULL, "ADC2_OUTPUT"},
+	{"TX SWR_MIC5", NULL, "ADC3_OUTPUT"},
+	{"TX SWR_MIC8", NULL, "DMIC1_OUTPUT"},
+	{"TX SWR_MIC9", NULL, "DMIC2_OUTPUT"},
+	{"TX SWR_MIC8", NULL, "DMIC3_OUTPUT"},
+	{"TX SWR_MIC9", NULL, "DMIC4_OUTPUT"},
+	{"TX SWR_MIC10", NULL, "DMIC5_OUTPUT"},
+	{"TX SWR_MIC11", NULL, "DMIC6_OUTPUT"},
+	{"TX SWR_ADC0", NULL, "ADC1_OUTPUT"},
+	{"TX SWR_ADC1", NULL, "ADC2_OUTPUT"},
+	{"TX SWR_ADC2", NULL, "ADC3_OUTPUT"},
+	{"TX SWR_DMIC0", NULL, "DMIC1_OUTPUT"},
+	{"TX SWR_DMIC1", NULL, "DMIC2_OUTPUT"},
+	{"TX SWR_DMIC2", NULL, "DMIC3_OUTPUT"},
+	{"TX SWR_DMIC3", NULL, "DMIC4_OUTPUT"},
+	{"TX SWR_DMIC4", NULL, "DMIC5_OUTPUT"},
+	{"TX SWR_DMIC5", NULL, "DMIC6_OUTPUT"},
+};
+
 static int msm_asoc_machine_probe(struct platform_device *pdev)
 {
 	struct snd_soc_card *card = NULL;
@@ -6736,6 +6757,9 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 	ret = of_property_read_u32(pdev->dev.of_node,
 			"qcom,wcd-datalane-mismatch",
 			&wcd_datalane_mismatch);
+
+	card->dapm_routes = bengal_legacy_dapm_routes;
+	card->num_dapm_routes = ARRAY_SIZE(bengal_legacy_dapm_routes);
 
 	ret = devm_snd_soc_register_card(&pdev->dev, card);
 	if (ret == -EPROBE_DEFER) {

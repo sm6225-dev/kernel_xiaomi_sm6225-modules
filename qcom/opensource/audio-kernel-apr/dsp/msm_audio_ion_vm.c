@@ -868,6 +868,102 @@ u32 msm_audio_populate_upper_32_bits(dma_addr_t pa)
 }
 EXPORT_SYMBOL(msm_audio_populate_upper_32_bits);
 
+
+#include <linux/miscdevice.h>
+#include <linux/fs.h>
+#include <linux/uaccess.h>
+
+struct dummy_ion_allocation_data_new {
+	__u64 len;
+	__u32 heap_id_mask;
+	__u32 flags;
+	__u32 fd;
+	__u32 unused;
+};
+
+struct dummy_ion_allocation_data_old {
+	size_t len;
+	size_t align;
+	unsigned int heap_id_mask;
+	unsigned int flags;
+	int handle;
+};
+
+struct dummy_ion_fd_data {
+	int handle;
+	int fd;
+};
+
+#define DUMMY_ION_IOC_MAGIC		'I'
+#define DUMMY_ION_IOC_ALLOC_NEW	_IOWR(DUMMY_ION_IOC_MAGIC, 0, struct dummy_ion_allocation_data_new)
+#define DUMMY_ION_IOC_ALLOC_OLD	_IOWR(DUMMY_ION_IOC_MAGIC, 0, struct dummy_ion_allocation_data_old)
+#define DUMMY_ION_IOC_SHARE		_IOWR(DUMMY_ION_IOC_MAGIC, 4, struct dummy_ion_fd_data)
+
+static long dummy_ion_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+	struct dummy_ion_allocation_data_new data_new;
+	struct dummy_ion_allocation_data_old data_old;
+	struct dummy_ion_fd_data fd_data;
+	struct dma_buf *dmabuf;
+	int fd;
+	void __user *argp = (void __user *)arg;
+	size_t len = 0;
+
+	if (cmd == DUMMY_ION_IOC_ALLOC_NEW) {
+		if (copy_from_user(&data_new, argp, sizeof(data_new)))
+			return -EFAULT;
+		len = data_new.len;
+	} else if (cmd == DUMMY_ION_IOC_ALLOC_OLD) {
+		if (copy_from_user(&data_old, argp, sizeof(data_old)))
+			return -EFAULT;
+		len = data_old.len;
+	} else if (cmd == DUMMY_ION_IOC_SHARE) {
+		if (copy_from_user(&fd_data, argp, sizeof(fd_data)))
+			return -EFAULT;
+		fd_data.fd = fd_data.handle;
+		if (copy_to_user(argp, &fd_data, sizeof(fd_data)))
+			return -EFAULT;
+		return 0;
+	} else {
+		return -ENOTTY;
+	}
+
+	dmabuf = ion_alloc(len, ION_HEAP(ION_SYSTEM_HEAP_ID), 0);
+	if (IS_ERR(dmabuf)) {
+		pr_err("dummy_ion: ion_alloc failed\n");
+		return PTR_ERR(dmabuf);
+	}
+		
+	fd = dma_buf_fd(dmabuf, O_CLOEXEC);
+	if (fd < 0) {
+		dma_buf_put(dmabuf);
+		return fd;
+	}
+	
+	if (cmd == DUMMY_ION_IOC_ALLOC_NEW) {
+		data_new.fd = fd;
+		if (copy_to_user(argp, &data_new, sizeof(data_new)))
+			return -EFAULT;
+	} else if (cmd == DUMMY_ION_IOC_ALLOC_OLD) {
+		data_old.handle = fd;
+		if (copy_to_user(argp, &data_old, sizeof(data_old)))
+			return -EFAULT;
+	}
+		
+	return 0;
+}
+
+static const struct file_operations dummy_ion_fops = {
+	.owner = THIS_MODULE,
+	.unlocked_ioctl = dummy_ion_ioctl,
+	.compat_ioctl = dummy_ion_ioctl,
+};
+
+static struct miscdevice dummy_ion_dev = {
+	.minor = MISC_DYNAMIC_MINOR,
+	.name = "ion",
+	.fops = &dummy_ion_fops,
+};
 static const struct of_device_id msm_audio_ion_dt_match[] = {
 	{ .compatible = "qcom,msm-audio-ion" },
 	{ }
@@ -913,8 +1009,12 @@ static int msm_audio_ion_probe(struct platform_device *pdev)
 		__func__, msm_audio_ion_hab_handle);
 
 exit:
-	if (!rc)
+	if (!rc) {
 		msm_audio_ion_data.device_status |= MSM_AUDIO_ION_PROBED;
+		rc = misc_register(&dummy_ion_dev);
+		if (rc)
+			dev_err(dev, "dummy_ion: failed to register misc device\n");
+	}
 
 	msm_audio_ion_data.cb_dev = dev;
 	INIT_LIST_HEAD(&msm_audio_ion_data.alloc_list);
@@ -929,6 +1029,7 @@ static int msm_audio_ion_remove(struct platform_device *pdev)
 		if (msm_audio_ion_hab_handle)
 			habmm_socket_close(msm_audio_ion_hab_handle);
 	}
+	misc_deregister(&dummy_ion_dev);
 	msm_audio_ion_data.smmu_enabled = 0;
 	msm_audio_ion_data.device_status = 0;
 	mutex_destroy(&(msm_audio_ion_data.list_mutex));
