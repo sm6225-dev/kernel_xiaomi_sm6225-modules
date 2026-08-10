@@ -229,6 +229,8 @@ static int va_macro_mclk_enable(struct va_macro_priv *va_priv,
 
 	mutex_lock(&va_priv->mclk_lock);
 	if (mclk_enable) {
+                if (va_priv->va_mclk_users == 0)
+                        pm_runtime_get_sync(va_priv->dev);
 		ret = bolero_clk_rsc_request_clock(va_priv->dev,
 						   va_priv->default_clk_id,
 						   va_priv->clk_id,
@@ -241,13 +243,13 @@ static int va_macro_mclk_enable(struct va_macro_priv *va_priv,
 		}
 		bolero_clk_rsc_fs_gen_request(va_priv->dev,
 					      true);
-		if (va_priv->va_mclk_users == 0) {
-			regcache_mark_dirty(regmap);
-			regcache_sync_region(regmap,
-					VA_START_OFFSET,
-					VA_MAX_OFFSET);
-		}
-		va_priv->va_mclk_users++;
+                if (va_priv->va_mclk_users == 0) {
+                        regcache_mark_dirty(regmap);
+                        regcache_sync_region(regmap,
+                                        VA_START_OFFSET,
+                                        VA_MAX_OFFSET);
+                }
+                va_priv->va_mclk_users++;
 	} else {
 		if (va_priv->va_mclk_users <= 0) {
 			dev_err(va_priv->dev, "%s: clock already disabled\n",

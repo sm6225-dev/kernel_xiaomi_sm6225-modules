@@ -1236,8 +1236,8 @@ static int rx_macro_mclk_enable(struct rx_macro_priv *rx_priv,
 							   rx_priv->default_clk_id,
 							   rx_priv->clk_id,
 							   true);
-			rx_macro_core_vote(rx_priv, false);
 			if (ret < 0) {
+				rx_macro_core_vote(rx_priv, false);
 				dev_err(rx_priv->dev,
 					"%s: rx request clock enable failed\n",
 					__func__);

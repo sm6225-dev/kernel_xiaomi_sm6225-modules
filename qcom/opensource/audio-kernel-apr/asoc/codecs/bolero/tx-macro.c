@@ -228,11 +228,17 @@ static int tx_macro_mclk_enable(struct tx_macro_priv *tx_priv,
 
 	mutex_lock(&tx_priv->mclk_lock);
 	if (mclk_enable) {
+		if (tx_priv->tx_mclk_users == 0)
+			pm_runtime_get_sync(tx_priv->dev);
 		ret = bolero_clk_rsc_request_clock(tx_priv->dev,
 						TX_CORE_CLK,
 						TX_CORE_CLK,
 						true);
 		if (ret < 0) {
+			if (tx_priv->tx_mclk_users == 0) {
+				pm_runtime_mark_last_busy(tx_priv->dev);
+				pm_runtime_put_autosuspend(tx_priv->dev);
+			}
 			dev_err_ratelimited(tx_priv->dev,
 				"%s: request clock enable failed\n",
 				__func__);
@@ -279,6 +285,10 @@ static int tx_macro_mclk_enable(struct tx_macro_priv *tx_priv,
 				 TX_CORE_CLK,
 				 TX_CORE_CLK,
 				 false);
+                if (tx_priv->tx_mclk_users == 0) {
+                        pm_runtime_mark_last_busy(tx_priv->dev);
+                        pm_runtime_put_autosuspend(tx_priv->dev);
+                }
 	}
 exit:
 	mutex_unlock(&tx_priv->mclk_lock);
@@ -2560,6 +2570,10 @@ static int tx_macro_tx_va_mclk_enable(struct tx_macro_priv *tx_priv,
 						   TX_CORE_CLK,
 						   TX_CORE_CLK,
 						   false);
+                if (tx_priv->tx_mclk_users == 0) {
+                        pm_runtime_mark_last_busy(tx_priv->dev);
+                        pm_runtime_put_autosuspend(tx_priv->dev);
+                }
 		tx_priv->swr_clk_users++;
 	} else {
 		if (tx_priv->swr_clk_users <= 0) {
@@ -2602,6 +2616,10 @@ static int tx_macro_tx_va_mclk_enable(struct tx_macro_priv *tx_priv,
 							   TX_CORE_CLK,
 							   VA_CORE_CLK,
 							   false);
+                if (tx_priv->tx_mclk_users == 0) {
+                        pm_runtime_mark_last_busy(tx_priv->dev);
+                        pm_runtime_put_autosuspend(tx_priv->dev);
+                }
 			if (ret < 0) {
 				dev_err_ratelimited(tx_priv->dev,
 					"%s: swr request clk failed\n",
@@ -2615,6 +2633,10 @@ tx_clk:
 						   TX_CORE_CLK,
 						   TX_CORE_CLK,
 						   false);
+                if (tx_priv->tx_mclk_users == 0) {
+                        pm_runtime_mark_last_busy(tx_priv->dev);
+                        pm_runtime_put_autosuspend(tx_priv->dev);
+                }
 		if (tx_priv->swr_clk_users == 0) {
 			msm_cdc_pinctrl_set_wakeup_capable(
 					tx_priv->tx_swr_gpio_p, true);
@@ -2636,6 +2658,7 @@ done:
 				TX_CORE_CLK,
 				TX_CORE_CLK,
 				false);
+
 exit:
 	trace_printk("%s: exit\n", __func__);
 	return ret;
