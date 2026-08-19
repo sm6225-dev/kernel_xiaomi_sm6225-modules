@@ -2147,6 +2147,7 @@ static void msm_pcm_routing_process_audio(u16 reg, u16 val, int set)
 			INVALID_SESSION) {
 			int app_type, app_type_idx, copp_idx, acdb_dev_id;
 			int port_id = get_port_id(msm_bedais[reg].port_id);
+
 			/*
 			 * check if ADM needs to be configured with different
 			 * channel mapping than backend
@@ -2261,6 +2262,12 @@ static void msm_pcm_routing_process_audio(u16 reg, u16 val, int set)
 			if (idx >= MAX_COPPS_PER_PORT) {
 				pr_debug("%s: copp idx is invalid, exiting\n",
 								__func__);
+				if (bitmap_empty(&msm_bedais[reg].fe_sessions[0],
+						 MSM_FRONTEND_DAI_MAX)) {
+					msm_bedais[reg].active = 0;
+					msm_bedais[reg].channel = 0;
+					msm_bedais[reg].sample_rate = 0;
+				}
 				mutex_unlock(&routing_lock);
 				return;
 			}
@@ -2283,6 +2290,12 @@ static void msm_pcm_routing_process_audio(u16 reg, u16 val, int set)
 						     path_type,
 						     fdai->perf_mode,
 						     passthr_mode);
+		}
+		if (bitmap_empty(&msm_bedais[reg].fe_sessions[0],
+				 MSM_FRONTEND_DAI_MAX)) {
+			msm_bedais[reg].active = 0;
+			msm_bedais[reg].channel = 0;
+			msm_bedais[reg].sample_rate = 0;
 		}
 	}
 	if ((msm_bedais[reg].port_id == VOICE_RECORD_RX)

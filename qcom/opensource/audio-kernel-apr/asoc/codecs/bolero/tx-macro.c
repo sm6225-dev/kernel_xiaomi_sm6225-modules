@@ -467,7 +467,7 @@ static bool is_amic_enabled(struct snd_soc_component *component, int decimator)
 	adc_mux_reg = BOLERO_CDC_TX_INP_MUX_ADC_MUX0_CFG1 +
 			TX_MACRO_ADC_MUX_CFG_OFFSET * decimator;
 	if (snd_soc_component_read(component, adc_mux_reg) & SWR_MIC) {
-		if (tx_priv->version == BOLERO_VERSION_2_1)
+		if (tx_priv->version >= BOLERO_VERSION_2_0)
 			return true;
 		adc_reg = BOLERO_CDC_TX_INP_MUX_ADC_MUX0_CFG0 +
 			TX_MACRO_ADC_MUX_CFG_OFFSET * decimator;
@@ -981,7 +981,7 @@ static int tx_macro_enable_dec(struct snd_soc_dapm_widget *w,
 					TX_MACRO_ADC_MUX_CFG_OFFSET * decimator;
 			adc_n = snd_soc_component_read(component, adc_reg) &
 					TX_MACRO_SWR_MIC_MUX_SEL_MASK;
-			if (adc_n >= BOLERO_ADC_MAX) {
+			if (adc_n >= BOLERO_ADC_MAX && tx_priv->version < BOLERO_VERSION_2_0) {
 				dmic_clk_reg =
 					BOLERO_CDC_TX_TOP_CSR_SWR_DMIC0_CTL +
 					((adc_n - 5) / 2) * 4;
@@ -1528,7 +1528,7 @@ static const struct snd_soc_dapm_widget tx_macro_dapm_widgets_common[] = {
 	TX_MACRO_DAPM_MUX("TX SMIC MUX2", 0, tx_smic2_v2),
 	TX_MACRO_DAPM_MUX("TX SMIC MUX3", 0, tx_smic3_v2),
 
-	SND_SOC_DAPM_MICBIAS_E("TX MIC BIAS1", SND_SOC_NOPM, 0, 0,
+	SND_SOC_DAPM_SUPPLY("TX MIC BIAS1", SND_SOC_NOPM, 0, 0,
 			       tx_macro_enable_micbias,
 			       SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
 	SND_SOC_DAPM_ADC_E("TX DMIC0", NULL, SND_SOC_NOPM, 0, 0,
@@ -1712,7 +1712,7 @@ static const struct snd_soc_dapm_widget tx_macro_dapm_widgets[] = {
 	TX_MACRO_DAPM_MUX("TX SMIC MUX6", 0, tx_smic6),
 	TX_MACRO_DAPM_MUX("TX SMIC MUX7", 0, tx_smic7),
 
-	SND_SOC_DAPM_MICBIAS_E("TX MIC BIAS1", SND_SOC_NOPM, 0, 0,
+	SND_SOC_DAPM_SUPPLY("TX MIC BIAS1", SND_SOC_NOPM, 0, 0,
 			       tx_macro_enable_micbias,
 			       SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
 	SND_SOC_DAPM_ADC_E("TX DMIC0", NULL, SND_SOC_NOPM, 0, 0,

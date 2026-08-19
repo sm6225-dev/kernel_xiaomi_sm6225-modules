@@ -87,6 +87,7 @@
 #define VIDC_WRAPPER_INTR_MASK_A2HCPU_BMSK_AR50_LT	0x4
 #define VIDC_WRAPPER_INTR_MASK_A2HCPU_SHFT_AR50_LT	0x2
 
+#define VIDC_WRAPPER_INTR_CLEAR_AR50_LT		(VIDC_WRAPPER_BASE_OFFS_AR50_LT + 0x14)
 #define VIDC_WRAPPER_INTR_CLEAR_A2HWD_BMSK_AR50_LT	0x10
 #define VIDC_WRAPPER_INTR_CLEAR_A2HWD_SHFT_AR50_LT	0x4
 #define VIDC_WRAPPER_INTR_CLEAR_A2H_BMSK_AR50_LT	0x4
@@ -134,6 +135,7 @@ void __setup_ucregion_memory_map_ar50_lt(struct venus_hfi_device *device, u32 si
 	__write_register(device, VIDC_QTBL_ADDR_AR50_LT,
 			(u32)device->iface_q_table.align_device_addr, sid);
 	__write_register(device, VIDC_QTBL_INFO_AR50_LT, 0x01, sid);
+	__write_register(device, VIDC_VERSION_INFO_AR50_LT, 0x01, sid);
 	if (device->sfr.align_device_addr)
 		__write_register(device, VIDC_SFR_ADDR_AR50_LT,
 				(u32)device->sfr.align_device_addr, sid);
@@ -216,8 +218,7 @@ skip_power_off:
 
 void __raise_interrupt_ar50_lt(struct venus_hfi_device *device, u32 sid)
 {
-	__write_register(device, VIDC_CPU_IC_SOFTINT_AR50_LT,
-		VIDC_CPU_IC_SOFTINT_H2A_SHFT_AR50_LT, sid);
+	__write_register(device, VIDC_CPU_IC_SOFTINT_AR50_LT, 1, sid);
 }
 
 void __core_clear_interrupt_ar50_lt(struct venus_hfi_device *device)
@@ -245,6 +246,7 @@ void __core_clear_interrupt_ar50_lt(struct venus_hfi_device *device)
 	}
 
 	__write_register(device, VIDC_CPU_CS_A2HSOFTINTCLR_AR50_LT, 1, DEFAULT_SID);
+	__write_register(device, VIDC_WRAPPER_INTR_CLEAR_AR50_LT, intr_status, DEFAULT_SID);
 }
 
 int __boot_firmware_ar50_lt(struct venus_hfi_device *device, u32 sid)

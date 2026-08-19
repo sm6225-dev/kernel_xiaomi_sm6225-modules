@@ -1052,15 +1052,10 @@ static int msm_vi_feed_tx_ch_put(struct snd_kcontrol *kcontrol,
 
 #ifdef CONFIG_SND_SOC_AW87XXX
 extern int aw87xxx_show_current_profile_index(int dev_index);
-extern int aw87xxx_set_profile(int dev_index, char *profile);
 extern void wcd937x_set_aw87xxx_spk_mode(int mode);
 extern void wcd937x_set_aw87xxx_rcv_mode(int mode);
 struct snd_soc_card *pcard = NULL;
 
-static char *aw87xxx_profile_name[] = {
-	"Music", "Voice", "Voip", "Ringtone", "Ringtone_hs", "Lowpower",
-	"Bypass", "Mmi", "Fm", "Notification", "Receiver", "Off"
-};
 static int aw87xxx_spk_pa_mode_get(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
 {
@@ -1074,23 +1069,16 @@ static int aw87xxx_spk_pa_mode_get(struct snd_kcontrol *kcontrol,
 static int aw87xxx_spk_pa_mode_set(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
 {
-	int ret;
 	int set_mode;
 
 	set_mode = ucontrol->value.integer.value[0];
-	if (set_mode >= ARRAY_SIZE(aw87xxx_profile_name))
-		return -EINVAL;
-
 	if (pcard) {
 		aw87xxx_spk_mode_val = set_mode;
 		wcd937x_set_aw87xxx_spk_mode(set_mode);
 	}
-	ret = aw87xxx_set_profile(1, aw87xxx_profile_name[set_mode]);
-	if (ret < 0)
-		return ret;
 
 	pr_debug("%s: set mode:%d success", __func__, set_mode);
-	return 1;
+	return 0;
 }
 
 static int aw87xxx_rcv_pa_mode_get(struct snd_kcontrol *kcontrol,
@@ -1106,23 +1094,16 @@ static int aw87xxx_rcv_pa_mode_get(struct snd_kcontrol *kcontrol,
 static int aw87xxx_rcv_pa_mode_set(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
 {
-	int ret;
 	int set_mode;
 
 	set_mode = ucontrol->value.integer.value[0];
-	if (set_mode >= ARRAY_SIZE(aw87xxx_profile_name))
-		return -EINVAL;
-
 	if (pcard) {
 		aw87xxx_rcv_mode_val = set_mode;
 		wcd937x_set_aw87xxx_rcv_mode(set_mode);
 	}
-	ret = aw87xxx_set_profile(0, aw87xxx_profile_name[set_mode]);
-	if (ret < 0)
-		return ret;
 
 	pr_debug("%s: set mode:%d success", __func__, set_mode);
-	return 1;
+	return 0;
 }
 
 #define AW_MSG_ID_SPIN      (0x10013D2E)
@@ -4094,10 +4075,9 @@ static int msm_snd_cdc_dma_hw_params(struct snd_pcm_substream *substream,
 					  user_set_rx_ch, &rx_ch_cdc_dma);
 			if (ret < 0) {
 				pr_err("%s: failed to set cpu chan map, err:%d\n",
-				__func__, ret);
+					__func__, ret);
 				goto err;
 			}
-
 		}
 		break;
 		}
@@ -4594,7 +4574,7 @@ err:
 	return ret;
 }
 
-static void *def_wcd_mbhc_cal(void)
+static void * __maybe_unused def_wcd_mbhc_cal(void)
 {
 	void *wcd_mbhc_cal;
 	struct wcd_mbhc_btn_detect_cfg *btn_cfg;
@@ -4630,7 +4610,7 @@ static void *def_wcd_mbhc_cal(void)
 	return wcd_mbhc_cal;
 }
 
-static void *def_rouleur_mbhc_cal(void)
+static void * __maybe_unused def_rouleur_mbhc_cal(void)
 {
 	void *wcd_mbhc_cal;
 	struct wcd_mbhc_btn_detect_cfg *btn_cfg;
@@ -5998,84 +5978,28 @@ static const struct of_device_id bengal_asoc_machine_of_match[]  = {
 	{},
 };
 
+static const struct snd_soc_dapm_route bengal_legacy_dapm_routes[] = {
+	{"TX SWR_MIC0", NULL, "ADC1_OUTPUT"},
+	{"TX SWR_MIC4", NULL, "ADC2_OUTPUT"},
+};
+
 static int msm_snd_card_bengal_late_probe(struct snd_soc_card *card)
 {
-	struct snd_soc_component *component = NULL;
-	struct platform_device *pdev = NULL;
-	char *data = NULL;
-	int ret = 0, i = 0;
-	void *mbhc_calibration;
+	int ret = 0;
 
 	dev_warn(card->dev, "%s: enter, num_aux_devs=%d\n",
 		 __func__, card->num_aux_devs);
-	/*
-	 * The legacy auxiliary-codec lookup deadlocks during 5.15 card bind.
-	 * WCD937x has already been bound and probed by soc_probe_aux_devices(),
-	 * so skip this late MBHC-only scan while bringing up playback.
-	 */
-	dev_warn(card->dev, "%s: skipping legacy aux/MBHC scan\n", __func__);
+
+	ret = snd_soc_dapm_add_routes(&card->dapm, bengal_legacy_dapm_routes,
+				      ARRAY_SIZE(bengal_legacy_dapm_routes));
+	if (ret)
+		dev_warn(card->dev, "%s: failed to add legacy dapm routes: %d\n",
+			 __func__, ret);
+	else
+		dev_info(card->dev, "%s: added legacy dapm routes successfully\n",
+			 __func__);
+
 	return 0;
-
-	for (i = 0; i < card->num_aux_devs; i++)
-	{
-		if (msm_aux_dev[i].dlc.name != NULL ) {
-			if (strstr(msm_aux_dev[i].dlc.name, "wsa"))
-				continue;
-		}
-
-		if (msm_aux_dev[i].dlc.of_node) {
-			pdev = of_find_device_by_node(
-					msm_aux_dev[i].dlc.of_node);
-			if (pdev) {
-				data = (char*) of_device_get_match_data(
-							&pdev->dev);
-				component = msm_soc_find_component_by_node(
-					    msm_aux_dev[i].dlc.of_node);
-			}
-		}
-	}
-
-	dev_warn(card->dev, "%s: aux scan complete, data=%s component=%p\n",
-		 __func__, data ? data : "(null)", component);
-
-	if (data != NULL && component != NULL) {
-		if (!strncmp(data, "wcd937x", sizeof("wcd937x"))) {
-			/*
-			 * The legacy WCD937x MBHC start currently blocks card late
-			 * probe on the 5.15 port, preventing snd_card_register() and
-			 * therefore all /dev/snd nodes.  Keep the codec attached to
-			 * the card for its mixer/DAPM graph, but defer jack detection
-			 * until the MBHC port is fixed.
-			 */
-			dev_warn(component->dev,
-				 "%s: deferring WCD937x MBHC start\n", __func__);
-			return 0;
-
-			mbhc_calibration = def_wcd_mbhc_cal();
-			if (!mbhc_calibration)
-				goto err_mbhc_cal;
-			wcd_mbhc_cfg.calibration = mbhc_calibration;
-			ret = wcd937x_mbhc_hs_detect(component, &wcd_mbhc_cfg);
-		} else if (!strncmp( data, "rouleur", sizeof("rouleur"))) {
-			mbhc_calibration = def_rouleur_mbhc_cal();
-			if (!mbhc_calibration)
-				goto err_mbhc_cal;
-			wcd_mbhc_cfg.calibration = mbhc_calibration;
-			ret = rouleur_mbhc_hs_detect(component, &wcd_mbhc_cfg);
-		}
-	}
-
-	if (ret) {
-		dev_err(component->dev, "%s: mbhc hs detect failed, err:%d\n",
-			__func__, ret);
-		goto err_hs_detect;
-	}
-	return 0;
-
-err_hs_detect:
-	kfree(mbhc_calibration);
-err_mbhc_cal:
-	return ret;
 }
 static struct snd_soc_card *populate_snd_card_dailinks(struct device *dev)
 {
@@ -6721,27 +6645,6 @@ static int msm_audio_ssr_register(struct device *dev)
 	return ret;
 }
 
-static const struct snd_soc_dapm_route bengal_legacy_dapm_routes[] = {
-	{"TX SWR_MIC0", NULL, "ADC1_OUTPUT"},
-	{"TX SWR_MIC4", NULL, "ADC2_OUTPUT"},
-	{"TX SWR_MIC5", NULL, "ADC3_OUTPUT"},
-	{"TX SWR_MIC8", NULL, "DMIC1_OUTPUT"},
-	{"TX SWR_MIC9", NULL, "DMIC2_OUTPUT"},
-	{"TX SWR_MIC8", NULL, "DMIC3_OUTPUT"},
-	{"TX SWR_MIC9", NULL, "DMIC4_OUTPUT"},
-	{"TX SWR_MIC10", NULL, "DMIC5_OUTPUT"},
-	{"TX SWR_MIC11", NULL, "DMIC6_OUTPUT"},
-	{"TX SWR_ADC0", NULL, "ADC1_OUTPUT"},
-	{"TX SWR_ADC1", NULL, "ADC2_OUTPUT"},
-	{"TX SWR_ADC2", NULL, "ADC3_OUTPUT"},
-	{"TX SWR_DMIC0", NULL, "DMIC1_OUTPUT"},
-	{"TX SWR_DMIC1", NULL, "DMIC2_OUTPUT"},
-	{"TX SWR_DMIC2", NULL, "DMIC3_OUTPUT"},
-	{"TX SWR_DMIC3", NULL, "DMIC4_OUTPUT"},
-	{"TX SWR_DMIC4", NULL, "DMIC5_OUTPUT"},
-	{"TX SWR_DMIC5", NULL, "DMIC6_OUTPUT"},
-};
-
 static int msm_asoc_machine_probe(struct platform_device *pdev)
 {
 	struct snd_soc_card *card = NULL;
@@ -6807,9 +6710,6 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 			"qcom,wcd-datalane-mismatch",
 			&wcd_datalane_mismatch);
 
-	card->dapm_routes = bengal_legacy_dapm_routes;
-	card->num_dapm_routes = ARRAY_SIZE(bengal_legacy_dapm_routes);
-
 	ret = devm_snd_soc_register_card(&pdev->dev, card);
 	if (ret == -EPROBE_DEFER) {
 		dev_err(&pdev->dev, "%s: snd_soc_register_card returned -EPROBE_DEFER (codec_reg_done=%d)\n",
@@ -6822,6 +6722,7 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 			__func__, ret);
 		goto err;
 	}
+
 	dev_info(&pdev->dev, "%s: Sound card %s registered\n",
 		 __func__, card->name);
 

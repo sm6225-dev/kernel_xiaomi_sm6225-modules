@@ -329,13 +329,11 @@ void bolero_clear_amic_tx_hold(struct device *dev, u16 adc_n)
 		return;
 	}
 	event = BOLERO_WCD_EVT_TX_CH_HOLD_CLEAR;
-	if (adc_n == BOLERO_ADC0)
+	if (adc_n == BOLERO_ADC0 || adc_n == 1)
 		amic = 0x1;
-	else if (adc_n == BOLERO_ADC1)
+	else if (adc_n == BOLERO_ADC1 || adc_n == BOLERO_ADC2 || adc_n == 2 || adc_n == 3 || adc_n == 5)
 		amic = 0x2;
-	else if (adc_n == BOLERO_ADC2)
-		amic = 0x2;
-	else if (adc_n == BOLERO_ADC3)
+	else if (adc_n == BOLERO_ADC3 || adc_n == 4 || adc_n == 9)
 		amic = 0x3;
 	else
 		return;

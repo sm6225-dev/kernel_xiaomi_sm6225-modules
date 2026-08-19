@@ -1267,9 +1267,15 @@ static int wcd937x_codec_enable_dmic(struct snd_soc_dapm_widget *w,
 		snd_soc_component_update_bits(component,
 			dmic_clk_reg, 0x70, 0x20);
 		wcd937x_tx_connect_port(component, DMIC0 + (w->shift), true);
+		swr_slvdev_datapath_control(wcd937x->tx_swr_dev,
+				wcd937x->tx_swr_dev->dev_num,
+				true);
 		break;
 	case SND_SOC_DAPM_POST_PMD:
 		wcd937x_tx_connect_port(component, DMIC0 + (w->shift), false);
+		swr_slvdev_datapath_control(wcd937x->tx_swr_dev,
+				wcd937x->tx_swr_dev->dev_num,
+				false);
 		break;
 
 	};
@@ -1426,6 +1432,9 @@ static int wcd937x_codec_enable_adc(struct snd_soc_dapm_widget *w,
 			set_bit(AMIC2_BCS_ENABLE, &wcd937x->status_mask);
 		}
 		wcd937x_tx_connect_port(component, ADC1 + (w->shift), true);
+		swr_slvdev_datapath_control(wcd937x->tx_swr_dev,
+				wcd937x->tx_swr_dev->dev_num,
+				true);
 		break;
 	case SND_SOC_DAPM_POST_PMD:
 		wcd937x_tx_connect_port(component, ADC1 + (w->shift), false);
@@ -1434,6 +1443,9 @@ static int wcd937x_codec_enable_adc(struct snd_soc_dapm_widget *w,
 			wcd937x_tx_connect_port(component, MBHC, false);
 			clear_bit(AMIC2_BCS_ENABLE, &wcd937x->status_mask);
 		}
+		swr_slvdev_datapath_control(wcd937x->tx_swr_dev,
+				wcd937x->tx_swr_dev->dev_num,
+				false);
 		snd_soc_component_update_bits(component,
 				WCD937X_DIGITAL_CDC_ANA_CLK_CTL, 0x08, 0x00);
 		break;
@@ -1620,8 +1632,8 @@ int wcd937x_micbias_control(struct snd_soc_component *component,
 		break;
 	};
 
-	dev_dbg(component->dev, "%s: micb_num:%d, micb_ref: %d, pullup_ref: %d\n",
-		__func__, micb_num, wcd937x->micb_ref[micb_index],
+	dev_info(component->dev, "%s: micb_num:%d, req:%d, micb_ref: %d, pullup_ref: %d\n",
+		__func__, micb_num, req, wcd937x->micb_ref[micb_index],
 		wcd937x->pullup_ref[micb_index]);
 	mutex_unlock(&wcd937x->micb_lock);
 
@@ -1756,7 +1768,7 @@ static int __wcd937x_codec_enable_micbias(struct snd_soc_dapm_widget *w,
 			snd_soc_dapm_to_component(w->dapm);
 	int micb_num;
 
-	dev_dbg(component->dev, "%s: wname: %s, event: %d\n",
+	dev_info(component->dev, "%s: wname: %s, event: %d\n",
 		__func__, w->name, event);
 
 	if (strnstr(w->name, "MIC BIAS1", sizeof("MIC BIAS1")))
@@ -2416,15 +2428,15 @@ static const struct snd_soc_dapm_widget wcd937x_dapm_widgets[] = {
 				SND_SOC_DAPM_POST_PMD),
 
 	/* micbias widgets*/
-	SND_SOC_DAPM_MICBIAS_E("MIC BIAS1", SND_SOC_NOPM, 0, 0,
+	SND_SOC_DAPM_SUPPLY("MIC BIAS1", SND_SOC_NOPM, 0, 0,
 				wcd937x_codec_enable_micbias,
 				SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMU |
 				SND_SOC_DAPM_POST_PMD),
-	SND_SOC_DAPM_MICBIAS_E("MIC BIAS2", SND_SOC_NOPM, 0, 0,
+	SND_SOC_DAPM_SUPPLY("MIC BIAS2", SND_SOC_NOPM, 0, 0,
 				wcd937x_codec_enable_micbias,
 				SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMU |
 				SND_SOC_DAPM_POST_PMD),
-	SND_SOC_DAPM_MICBIAS_E("MIC BIAS3", SND_SOC_NOPM, 0, 0,
+	SND_SOC_DAPM_SUPPLY("MIC BIAS3", SND_SOC_NOPM, 0, 0,
 				wcd937x_codec_enable_micbias,
 				SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMU |
 				SND_SOC_DAPM_POST_PMD),
@@ -2507,15 +2519,15 @@ static const struct snd_soc_dapm_widget wcd937x_dapm_widgets[] = {
 	SND_SOC_DAPM_OUTPUT("HPHR"),
 
 	/* micbias pull up widgets*/
-	SND_SOC_DAPM_MICBIAS_E("VA MIC BIAS1", SND_SOC_NOPM, 0, 0,
+	SND_SOC_DAPM_SUPPLY("VA MIC BIAS1", SND_SOC_NOPM, 0, 0,
 				wcd937x_codec_enable_micbias_pullup,
 				SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMU |
 				SND_SOC_DAPM_POST_PMD),
-	SND_SOC_DAPM_MICBIAS_E("VA MIC BIAS2", SND_SOC_NOPM, 0, 0,
+	SND_SOC_DAPM_SUPPLY("VA MIC BIAS2", SND_SOC_NOPM, 0, 0,
 				wcd937x_codec_enable_micbias_pullup,
 				SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMU |
 				SND_SOC_DAPM_POST_PMD),
-	SND_SOC_DAPM_MICBIAS_E("VA MIC BIAS3", SND_SOC_NOPM, 0, 0,
+	SND_SOC_DAPM_SUPPLY("VA MIC BIAS3", SND_SOC_NOPM, 0, 0,
 				wcd937x_codec_enable_micbias_pullup,
 				SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMU |
 				SND_SOC_DAPM_POST_PMD),

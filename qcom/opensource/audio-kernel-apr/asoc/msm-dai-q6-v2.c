@@ -12372,8 +12372,9 @@ static int msm_dai_q6_cdc_dma_set_channel_map(struct snd_soc_dai *dai,
 	}
 
 	/* Some 5.15 codec components return the channel count but leave the
-	 * legacy CDC-DMA mask empty.  The 4.19 ADSP rejects that AFE config. */
-	if (!ch_mask && ch_num)
+	 * legacy CDC-DMA mask empty or with fewer bits than ch_num.
+	 * The ADSP validates that hweight(mask) == num_channels and rejects it otherwise. */
+	if ((!ch_mask || hweight_long(ch_mask) != ch_num) && ch_num)
 		ch_mask = (1U << ch_num) - 1;
 
 	dai_data->port_config.cdc_dma.active_channels_mask = ch_mask;

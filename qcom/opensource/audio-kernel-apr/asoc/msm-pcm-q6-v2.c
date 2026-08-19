@@ -462,6 +462,7 @@ static int msm_pcm_playback_prepare(struct snd_pcm_substream *substream)
 		pr_info("%s: CMD Format block failed\n", __func__);
 
 	atomic_set(&prtd->out_count, runtime->periods);
+	prtd->periods = runtime->periods;
 
 	prtd->enabled = 1;
 	prtd->cmd_pending = 0;
@@ -937,13 +938,10 @@ static int msm_pcm_playback_close(struct snd_pcm_substream *substream)
 
 		ret = wait_event_timeout(the_locks.eos_wait,
 					 !test_bit(CMD_EOS, &prtd->cmd_pending),
-					 msecs_to_jiffies(timeout));
-		if (!ret) {
+					 timeout);
+		if (!ret)
 			pr_err("%s: CMD_EOS failed, cmd_pending 0x%lx\n",
 			       __func__, prtd->cmd_pending);
-			q6asm_cmd(prtd->audio_client, CMD_PAUSE);
-			q6asm_cmd(prtd->audio_client, CMD_FLUSH);
-		}
 		q6asm_cmd(prtd->audio_client, CMD_CLOSE);
 		q6asm_audio_client_buf_free_contiguous(dir,
 					prtd->audio_client);
