@@ -379,13 +379,20 @@ static int alloc_dma_mem(size_t size, u32 align, u32 flags,
 		else
 			heap_name = "qcom,system";
 		flags |= SMEM_SECURE;
+	} else if (flags & SMEM_UNCACHED) {
+		heap_name = "qcom,system-uncached";
 	} else {
 		heap_name = "qcom,system";
 	}
 
 	heap = dma_heap_find(heap_name);
 	if (!heap) {
-		heap = dma_heap_find("qcom,system");
+		if (flags & SMEM_UNCACHED)
+			heap = dma_heap_find("system-uncached");
+		if (!heap)
+			heap = dma_heap_find("qcom,system");
+		if (!heap)
+			heap = dma_heap_find("system");
 		if (!heap) {
 			s_vpr_e(sid, "No dma heap found for %s\n", heap_name);
 			rc = -ENOMEM;

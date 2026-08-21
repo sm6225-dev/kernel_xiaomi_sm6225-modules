@@ -109,7 +109,7 @@ static inline int __suspend(struct venus_hfi_device *device);
 static int __enable_regulators(struct venus_hfi_device *device, u32 sid);
 static inline int __prepare_enable_clks(
 		struct venus_hfi_device *device, u32 sid);
-static void __flush_debug_queue(struct venus_hfi_device *device, u8 *packet);
+void __flush_debug_queue(struct venus_hfi_device *device, u8 *packet);
 static int __initialize_packetization(struct venus_hfi_device *device);
 static struct hal_session *__get_session(struct venus_hfi_device *device,
 		u32 sid);
@@ -162,7 +162,7 @@ struct venus_hfi_vpu_ops ar50_lite_ops = {
 	.prepare_pc = __prepare_pc_ar50_lt,
 	.raise_interrupt = __raise_interrupt_ar50_lt,
 	.watchdog = __watchdog_common,
-	.noc_error_info = NULL,
+	.noc_error_info = __noc_error_info_ar50_lt,
 	.core_clear_interrupt = __core_clear_interrupt_ar50_lt,
 	.boot_firmware = __boot_firmware_ar50_lt,
 };
@@ -3076,7 +3076,7 @@ skip_power_off:
 	return -EAGAIN;
 }
 
-static void print_sfr_message(struct venus_hfi_device *device)
+void print_sfr_message(struct venus_hfi_device *device)
 {
 	struct hfi_sfr_struct *vsfr = NULL;
 	u32 vsfr_size = 0;
@@ -3099,7 +3099,7 @@ static void print_sfr_message(struct venus_hfi_device *device)
 	}
 }
 
-static void __flush_debug_queue(struct venus_hfi_device *device, u8 *packet)
+void __flush_debug_queue(struct venus_hfi_device *device, u8 *packet)
 {
 	bool local_packet = false;
 	enum vidc_msg_prio log_level = msm_vidc_debug;
@@ -3383,6 +3383,8 @@ static void venus_hfi_core_work_handler(struct work_struct *work)
 	int num_responses = 0, i = 0;
 	u32 intr_status;
 
+	d_vpr_h("%s: running work handler\n", __func__);
+
 	mutex_lock(&device->lock);
 	if (!__core_in_valid_state(device)) {
 		d_vpr_e("%s: Core not in init state\n", __func__);
@@ -3443,6 +3445,7 @@ static irqreturn_t venus_hfi_isr(int irq, void *dev)
 {
 	struct venus_hfi_device *device = dev;
 
+	d_vpr_h("%s: irq %d fired!\n", __func__, irq);
 	disable_irq_nosync(irq);
 	queue_work(device->vidc_workq, &venus_hfi_work);
 	return IRQ_HANDLED;

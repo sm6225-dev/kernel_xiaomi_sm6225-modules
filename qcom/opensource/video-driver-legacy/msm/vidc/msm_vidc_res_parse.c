@@ -1061,10 +1061,13 @@ int msm_vidc_smmu_fault_handler(struct iommu_domain *domain,
 		}
 	}
 
-	d_vpr_e("%s: faulting address: %lx\n", __func__, iova);
+	d_vpr_e("%s: dev: %s, faulting address: %lx, flags: %#x\n",
+		__func__, dev ? dev_name(dev) : "unknown", iova, flags);
 
 	core->smmu_fault_handled = true;
 	msm_comm_print_insts_info(core);
+	if (core->device)
+		call_hfi_op(core->device, noc_error_info, core->device->hfi_device_data);
 	/*
 	 * Return -EINVAL to elicit the default behaviour of smmu driver.
 	 * If we return -EINVAL, then smmu driver assumes page fault handler

@@ -328,7 +328,10 @@ void __setup_ucregion_memory_map_ar50_lt(struct venus_hfi_device *device, u32 si
 void __power_off_ar50_lt(struct venus_hfi_device *device);
 int __prepare_pc_ar50_lt(struct venus_hfi_device *device);
 void __raise_interrupt_ar50_lt(struct venus_hfi_device *device, u32 sid);
+void __noc_error_info_ar50_lt(struct venus_hfi_device *device);
 void __core_clear_interrupt_ar50_lt(struct venus_hfi_device *device);
 int __boot_firmware_ar50_lt(struct venus_hfi_device *device, u32 sid);
+void __flush_debug_queue(struct venus_hfi_device *device, u8 *packet);
+void print_sfr_message(struct venus_hfi_device *device);
 
 #endif

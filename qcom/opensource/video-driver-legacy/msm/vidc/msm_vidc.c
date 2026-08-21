@@ -92,6 +92,8 @@ int msm_vidc_querycap(void *instance, struct v4l2_capability *cap)
 	cap->version = MSM_VIDC_VERSION;
 	cap->device_caps = V4L2_CAP_VIDEO_CAPTURE_MPLANE |
 		V4L2_CAP_VIDEO_OUTPUT_MPLANE |
+		V4L2_CAP_META_CAPTURE |
+		V4L2_CAP_META_OUTPUT |
 		V4L2_CAP_STREAMING;
 	cap->capabilities = cap->device_caps | V4L2_CAP_DEVICE_CAPS;
 
@@ -214,12 +216,17 @@ int msm_vidc_s_fmt(void *instance, struct v4l2_format *f)
 	if (inst->session_type == MSM_VIDC_ENCODER)
 		rc = msm_venc_s_fmt(instance, f);
 
-	s_vpr_h(inst->sid,
-		"s_fmt: type %d wxh %dx%d pixelfmt %#x num_planes %d size[0] %d size[1] %d in_reconfig %d\n",
-		f->type, f->fmt.pix_mp.width, f->fmt.pix_mp.height,
-		f->fmt.pix_mp.pixelformat, f->fmt.pix_mp.num_planes,
-		f->fmt.pix_mp.plane_fmt[0].sizeimage,
-		f->fmt.pix_mp.plane_fmt[1].sizeimage, inst->in_reconfig);
+	if (f->type == 13 || f->type == 14) {
+		s_vpr_h(inst->sid, "s_fmt: meta type %d buffersize %d rc %d\n",
+			f->type, f->fmt.meta.buffersize, rc);
+	} else {
+		s_vpr_h(inst->sid,
+			"s_fmt: type %d wxh %dx%d pixelfmt %#x num_planes %d size[0] %d size[1] %d in_reconfig %d\n",
+			f->type, f->fmt.pix_mp.width, f->fmt.pix_mp.height,
+			f->fmt.pix_mp.pixelformat, f->fmt.pix_mp.num_planes,
+			f->fmt.pix_mp.plane_fmt[0].sizeimage,
+			f->fmt.pix_mp.plane_fmt[1].sizeimage, inst->in_reconfig);
+	}
 	return rc;
 }
 EXPORT_SYMBOL(msm_vidc_s_fmt);
@@ -237,12 +244,17 @@ int msm_vidc_g_fmt(void *instance, struct v4l2_format *f)
 	if (inst->session_type == MSM_VIDC_ENCODER)
 		rc = msm_venc_g_fmt(instance, f);
 
-	s_vpr_h(inst->sid,
-		"g_fmt: type %d wxh %dx%d pixelfmt %#x num_planes %d size[0] %d size[1] %d in_reconfig %d\n",
-		f->type, f->fmt.pix_mp.width, f->fmt.pix_mp.height,
-		f->fmt.pix_mp.pixelformat, f->fmt.pix_mp.num_planes,
-		f->fmt.pix_mp.plane_fmt[0].sizeimage,
-		f->fmt.pix_mp.plane_fmt[1].sizeimage, inst->in_reconfig);
+	if (f->type == 13 || f->type == 14) {
+		s_vpr_h(inst->sid, "g_fmt: meta type %d buffersize %d rc %d\n",
+			f->type, f->fmt.meta.buffersize, rc);
+	} else {
+		s_vpr_h(inst->sid,
+			"g_fmt: type %d wxh %dx%d pixelfmt %#x num_planes %d size[0] %d size[1] %d in_reconfig %d\n",
+			f->type, f->fmt.pix_mp.width, f->fmt.pix_mp.height,
+			f->fmt.pix_mp.pixelformat, f->fmt.pix_mp.num_planes,
+			f->fmt.pix_mp.plane_fmt[0].sizeimage,
+			f->fmt.pix_mp.plane_fmt[1].sizeimage, inst->in_reconfig);
+	}
 	return rc;
 }
 EXPORT_SYMBOL(msm_vidc_g_fmt);
@@ -250,11 +262,15 @@ EXPORT_SYMBOL(msm_vidc_g_fmt);
 int msm_vidc_s_ctrl(void *instance, struct v4l2_control *control)
 {
 	struct msm_vidc_inst *inst = instance;
+	int rc;
 
 	if (!inst || !control)
 		return -EINVAL;
 
-	return msm_comm_s_ctrl(instance, control);
+	rc = msm_comm_s_ctrl(instance, control);
+	s_vpr_h(inst->sid, "s_ctrl: id 0x%x val %d rc %d\n",
+		control->id, control->value, rc);
+	return rc;
 }
 EXPORT_SYMBOL(msm_vidc_s_ctrl);
 
@@ -272,8 +288,12 @@ int msm_vidc_g_ctrl(void *instance, struct v4l2_control *control)
 		rc = try_get_ctrl_for_instance(inst, ctrl);
 		if (!rc)
 			control->value = ctrl->val;
+	} else {
+		rc = -EINVAL;
 	}
 
+	s_vpr_h(inst->sid, "g_ctrl: id 0x%x val %d rc %d\n",
+		control->id, control->value, rc);
 	return rc;
 }
 EXPORT_SYMBOL(msm_vidc_g_ctrl);
@@ -286,6 +306,15 @@ int msm_vidc_reqbufs(void *instance, struct v4l2_requestbuffers *b)
 
 	if (!inst || !b)
 		return -EINVAL;
+
+	s_vpr_h(inst->sid, "reqbufs: type=%d, memory=%d, count=%d\n",
+		b->type, b->memory, b->count);
+
+	if (b->type == 13 || b->type == 14 ||
+		b->type == V4L2_BUF_TYPE_META_CAPTURE ||
+		b->type == V4L2_BUF_TYPE_META_OUTPUT)
+		return 0;
+
 	q = msm_comm_get_vb2q(inst, b->type);
 	if (!q) {
 		s_vpr_e(inst->sid,
@@ -298,7 +327,8 @@ int msm_vidc_reqbufs(void *instance, struct v4l2_requestbuffers *b)
 	mutex_unlock(&q->lock);
 
 	if (rc)
-		s_vpr_e(inst->sid, "Failed to get reqbufs, %d\n", rc);
+		s_vpr_e(inst->sid, "Failed to get reqbufs, %d (type=%d, mem=%d, count=%d)\n",
+			rc, b->type, b->memory, b->count);
 	return rc;
 }
 EXPORT_SYMBOL(msm_vidc_reqbufs);
@@ -504,6 +534,10 @@ int msm_vidc_streamon(void *instance, enum v4l2_buf_type i)
 	if (!inst)
 		return -EINVAL;
 
+	/* Extradata / Meta queues (13 and 14) are not separate vb2 queues */
+	if (i == 13 || i == 14 || i == V4L2_BUF_TYPE_META_CAPTURE || i == V4L2_BUF_TYPE_META_OUTPUT)
+		return 0;
+
 	q = msm_comm_get_vb2q(inst, i);
 	if (!q) {
 		d_vpr_e("Failed to find buffer queue. type %d\n", i);
@@ -529,6 +563,10 @@ int msm_vidc_streamoff(void *instance, enum v4l2_buf_type i)
 
 	if (!inst)
 		return -EINVAL;
+
+	/* Extradata queues (13 and 14) are not separate vb2 queues */
+	if (i == 13 || i == 14 || i == V4L2_BUF_TYPE_META_CAPTURE || i == V4L2_BUF_TYPE_META_OUTPUT)
+		return 0;
 
 	q = msm_comm_get_vb2q(inst, i);
 	if (!q) {
@@ -583,6 +621,184 @@ int msm_vidc_enum_framesizes(void *instance, struct v4l2_frmsizeenum *fsize)
 }
 EXPORT_SYMBOL(msm_vidc_enum_framesizes);
 
+int msm_vidc_g_selection(void *instance, struct v4l2_selection *s)
+{
+	struct msm_vidc_inst *inst = instance;
+	struct msm_vidc_format *fmt;
+	enum vidc_ports port;
+
+	if (!inst || !s)
+		return -EINVAL;
+
+	if (s->type == V4L2_BUF_TYPE_VIDEO_OUTPUT ||
+	    s->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
+		port = INPUT_PORT;
+	} else if (s->type == V4L2_BUF_TYPE_VIDEO_CAPTURE ||
+	           s->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
+		port = OUTPUT_PORT;
+	} else {
+		return -EINVAL;
+	}
+
+	fmt = &inst->fmts[port];
+
+	switch (s->target) {
+	case V4L2_SEL_TGT_CROP_DEFAULT:
+	case V4L2_SEL_TGT_CROP_BOUNDS:
+	case V4L2_SEL_TGT_CROP:
+	case V4L2_SEL_TGT_COMPOSE_DEFAULT:
+	case V4L2_SEL_TGT_COMPOSE_BOUNDS:
+	case V4L2_SEL_TGT_COMPOSE:
+	case V4L2_SEL_TGT_COMPOSE_PADDED:
+		s->r.left = 0;
+		s->r.top = 0;
+		s->r.width = fmt->v4l2_fmt.fmt.pix_mp.width;
+		s->r.height = fmt->v4l2_fmt.fmt.pix_mp.height;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	s_vpr_h(inst->sid, "g_selection: type %d target %d wxh %dx%d\n",
+		s->type, s->target, s->r.width, s->r.height);
+	return 0;
+}
+EXPORT_SYMBOL(msm_vidc_g_selection);
+
+int msm_vidc_s_selection(void *instance, struct v4l2_selection *s)
+{
+	struct msm_vidc_inst *inst = instance;
+	struct msm_vidc_format *fmt;
+	enum vidc_ports port;
+
+	if (!inst || !s)
+		return -EINVAL;
+
+	if (s->type == V4L2_BUF_TYPE_VIDEO_OUTPUT ||
+	    s->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
+		port = INPUT_PORT;
+	} else if (s->type == V4L2_BUF_TYPE_VIDEO_CAPTURE ||
+	           s->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
+		port = OUTPUT_PORT;
+	} else {
+		return -EINVAL;
+	}
+
+	fmt = &inst->fmts[port];
+
+	switch (s->target) {
+	case V4L2_SEL_TGT_CROP:
+	case V4L2_SEL_TGT_COMPOSE:
+		s->r.left = 0;
+		s->r.top = 0;
+		s->r.width = min_t(u32, s->r.width, fmt->v4l2_fmt.fmt.pix_mp.width);
+		s->r.height = min_t(u32, s->r.height, fmt->v4l2_fmt.fmt.pix_mp.height);
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	s_vpr_h(inst->sid, "s_selection: type %d target %d wxh %dx%d\n",
+		s->type, s->target, s->r.width, s->r.height);
+	return 0;
+}
+EXPORT_SYMBOL(msm_vidc_s_selection);
+
+int msm_vidc_g_crop(void *instance, struct v4l2_crop *a)
+{
+	struct v4l2_selection s = {
+		.type = a->type,
+		.target = V4L2_SEL_TGT_CROP,
+	};
+	int rc = msm_vidc_g_selection(instance, &s);
+
+	if (!rc)
+		a->c = s.r;
+	return rc;
+}
+EXPORT_SYMBOL(msm_vidc_g_crop);
+
+int msm_vidc_s_crop(void *instance, const struct v4l2_crop *a)
+{
+	struct v4l2_selection s = {
+		.type = a->type,
+		.target = V4L2_SEL_TGT_CROP,
+		.r = a->c,
+	};
+
+	return msm_vidc_s_selection(instance, &s);
+}
+EXPORT_SYMBOL(msm_vidc_s_crop);
+
+int msm_vidc_g_parm(void *instance, struct v4l2_streamparm *a)
+{
+	struct msm_vidc_inst *inst = instance;
+	u32 fps;
+
+	if (!inst || !a)
+		return -EINVAL;
+
+	fps = inst->clk_data.frame_rate >> 16;
+	if (!fps)
+		fps = 30;
+
+	if (a->type == V4L2_BUF_TYPE_VIDEO_OUTPUT ||
+	    a->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
+		a->parm.output.capability = V4L2_CAP_TIMEPERFRAME;
+		a->parm.output.timeperframe.numerator = 1;
+		a->parm.output.timeperframe.denominator = fps;
+	} else if (a->type == V4L2_BUF_TYPE_VIDEO_CAPTURE ||
+	           a->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
+		a->parm.capture.capability = V4L2_CAP_TIMEPERFRAME;
+		a->parm.capture.timeperframe.numerator = 1;
+		a->parm.capture.timeperframe.denominator = fps;
+	}
+
+	s_vpr_h(inst->sid, "g_parm: type %d fps %d\n", a->type, fps);
+	return 0;
+}
+EXPORT_SYMBOL(msm_vidc_g_parm);
+
+int msm_vidc_s_parm(void *instance, struct v4l2_streamparm *a)
+{
+	struct msm_vidc_inst *inst = instance;
+	u32 fps = 0;
+
+	if (!inst || !a)
+		return -EINVAL;
+
+	if (a->type == V4L2_BUF_TYPE_VIDEO_OUTPUT ||
+	    a->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
+		if (a->parm.output.timeperframe.numerator &&
+		    a->parm.output.timeperframe.denominator) {
+			fps = a->parm.output.timeperframe.denominator /
+			      a->parm.output.timeperframe.numerator;
+			inst->clk_data.frame_rate = fps << 16;
+			if (inst->session_type == MSM_VIDC_ENCODER &&
+			    inst->state == MSM_VIDC_START_DONE) {
+				msm_venc_set_frame_rate(inst);
+			}
+		}
+	} else if (a->type == V4L2_BUF_TYPE_VIDEO_CAPTURE ||
+	           a->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
+		if (a->parm.capture.timeperframe.numerator &&
+		    a->parm.capture.timeperframe.denominator) {
+			fps = a->parm.capture.timeperframe.denominator /
+			      a->parm.capture.timeperframe.numerator;
+			inst->clk_data.frame_rate = fps << 16;
+			if (inst->session_type == MSM_VIDC_ENCODER &&
+			    inst->state == MSM_VIDC_START_DONE) {
+				msm_venc_set_frame_rate(inst);
+			}
+		}
+	}
+
+	s_vpr_h(inst->sid, "s_parm: type %d frame_rate %d fps\n",
+		a->type, inst->clk_data.frame_rate >> 16);
+	return 0;
+}
+EXPORT_SYMBOL(msm_vidc_s_parm);
+
 static void *vidc_get_userptr(struct vb2_buffer *vb, struct device *dev,
 			unsigned long vaddr, unsigned long size)
 {
@@ -593,9 +809,51 @@ static void vidc_put_userptr(void *buf_priv)
 {
 }
 
+static void *vidc_alloc(struct vb2_buffer *vb, struct device *dev,
+		unsigned long size)
+{
+	return (void *)0xdeadbeef;
+}
+
+static void vidc_put(void *buf_priv)
+{
+}
+
+static int vidc_mmap(void *buf_priv, struct vm_area_struct *vma)
+{
+	return 0;
+}
+
+static void *vidc_attach_dmabuf(struct vb2_buffer *vb,
+		struct device *dev, struct dma_buf *dbuf,
+		unsigned long size)
+{
+	return (void *)0xdeadbeef;
+}
+
+static void vidc_detach_dmabuf(void *buf_priv)
+{
+}
+
+static int vidc_map_dmabuf(void *buf_priv)
+{
+	return 0;
+}
+
+static void vidc_unmap_dmabuf(void *buf_priv)
+{
+}
+
 static const struct vb2_mem_ops msm_vidc_vb2_mem_ops = {
 	.get_userptr = vidc_get_userptr,
 	.put_userptr = vidc_put_userptr,
+	.alloc = vidc_alloc,
+	.put = vidc_put,
+	.mmap = vidc_mmap,
+	.attach_dmabuf = vidc_attach_dmabuf,
+	.detach_dmabuf = vidc_detach_dmabuf,
+	.map_dmabuf = vidc_map_dmabuf,
+	.unmap_dmabuf = vidc_unmap_dmabuf,
 };
 
 static void msm_vidc_cleanup_buffer(struct vb2_buffer *vb)
@@ -1205,7 +1463,7 @@ static inline int vb2_bufq_init(struct msm_vidc_inst *inst,
 	}
 
 	q->type = type;
-	q->io_modes = VB2_MMAP | VB2_USERPTR;
+	q->io_modes = VB2_MMAP | VB2_USERPTR | VB2_DMABUF;
 	q->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_COPY;
 	q->ops = &msm_vidc_vb2q_ops;
 
@@ -1238,6 +1496,8 @@ int msm_vidc_subscribe_event(void *inst,
 
 	rc = v4l2_event_subscribe(&vidc_inst->event_handler,
 		sub, MAX_EVENTS, NULL);
+	s_vpr_h(vidc_inst->sid, "subscribe_event: type 0x%x id 0x%x flags 0x%x rc %d\n",
+		sub->type, sub->id, sub->flags, rc);
 	return rc;
 }
 EXPORT_SYMBOL(msm_vidc_subscribe_event);

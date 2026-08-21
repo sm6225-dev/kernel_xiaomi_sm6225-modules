@@ -110,6 +110,26 @@ static struct msm_vidc_ctrl msm_vdec_ctrls[] = {
 		.qmenu = NULL,
 	},
 	{
+		.id = V4L2_CID_MPEG_VIDC_VIDEO_ALLOC_MODE_OUTPUT,
+		.name = "Alloc Mode Output",
+		.type = V4L2_CTRL_TYPE_INTEGER,
+		.minimum = 0,
+		.maximum = 3,
+		.default_value = 0,
+		.step = 1,
+		.qmenu = NULL,
+	},
+	{
+		.id = V4L2_CID_MPEG_VIDC_VIDEO_ALLOC_MODE_INPUT,
+		.name = "Alloc Mode Input",
+		.type = V4L2_CTRL_TYPE_INTEGER,
+		.minimum = 0,
+		.maximum = 3,
+		.default_value = 0,
+		.step = 1,
+		.qmenu = NULL,
+	},
+	{
 		.id = V4L2_CID_MPEG_VIDC_VIDEO_STREAM_OUTPUT_MODE,
 		.name = "Video decoder multi stream",
 		.type = V4L2_CTRL_TYPE_BOOLEAN,
@@ -682,6 +702,16 @@ int msm_vdec_s_fmt(struct msm_vidc_inst *inst, struct v4l2_format *f)
 		update_log_ctxt(inst->sid, inst->session_type,
 			mplane->pixelformat);
 		memcpy(f, &fmt->v4l2_fmt, sizeof(struct v4l2_format));
+	} else if (f->type == 14 /* V4L2_BUF_TYPE_META_OUTPUT */) {
+		f->fmt.meta.dataformat = 0;
+		f->fmt.meta.buffersize = 4096;
+		return 0;
+	} else if (f->type == 13 /* V4L2_BUF_TYPE_META_CAPTURE */) {
+		f->fmt.meta.dataformat = 0;
+		f->fmt.meta.buffersize = msm_vidc_calculate_dec_output_extra_size(inst);
+		if (!f->fmt.meta.buffersize)
+			f->fmt.meta.buffersize = 4096;
+		return 0;
 	}
 
 	inst->batch.enable = is_batching_allowed(inst);
@@ -708,6 +738,14 @@ int msm_vdec_g_fmt(struct msm_vidc_inst *inst, struct v4l2_format *f)
 		fmt->fmt.pix_mp.plane_fmt[0].sizeimage =
 			msm_vidc_calculate_dec_input_frame_size(inst);
 		memcpy(f, fmt, sizeof(struct v4l2_format));
+	} else if (f->type == 14 /* V4L2_BUF_TYPE_META_OUTPUT */) {
+		f->fmt.meta.dataformat = 0;
+		f->fmt.meta.buffersize = 4096;
+	} else if (f->type == 13 /* V4L2_BUF_TYPE_META_CAPTURE */) {
+		f->fmt.meta.dataformat = 0;
+		f->fmt.meta.buffersize = msm_vidc_calculate_dec_output_extra_size(inst);
+		if (!f->fmt.meta.buffersize)
+			f->fmt.meta.buffersize = 4096;
 	} else {
 		s_vpr_e(inst->sid, "%s: Unsupported buf type: %d\n",
 			__func__, f->type);
@@ -879,6 +917,8 @@ int msm_vdec_s_ctrl(struct msm_vidc_inst *inst, struct v4l2_ctrl *ctrl)
 	case V4L2_CID_MPEG_VIDC_VIDEO_DECODE_ORDER:
 	case V4L2_CID_MPEG_VIDC_VIDEO_CONCEAL_COLOR_8BIT:
 	case V4L2_CID_MPEG_VIDC_VIDEO_CONCEAL_COLOR_10BIT:
+	case V4L2_CID_MPEG_VIDC_VIDEO_ALLOC_MODE_OUTPUT:
+	case V4L2_CID_MPEG_VIDC_VIDEO_ALLOC_MODE_INPUT:
 		break;
 	case V4L2_CID_MPEG_VIDC_VIDEO_SYNC_FRAME_DECODE:
 		inst->flags &= ~VIDC_THUMBNAIL;

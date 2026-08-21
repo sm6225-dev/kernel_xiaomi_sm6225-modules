@@ -199,6 +199,38 @@ static int msm_v4l2_enum_framesizes(struct file *file, void *fh,
 	return msm_vidc_enum_framesizes((void *)vidc_inst, fsize);
 }
 
+static int msm_v4l2_g_selection(struct file *file, void *fh,
+				struct v4l2_selection *s)
+{
+	struct msm_vidc_inst *vidc_inst = get_vidc_inst(file, fh);
+
+	return msm_vidc_g_selection((void *)vidc_inst, s);
+}
+
+static int msm_v4l2_s_selection(struct file *file, void *fh,
+				struct v4l2_selection *s)
+{
+	struct msm_vidc_inst *vidc_inst = get_vidc_inst(file, fh);
+
+	return msm_vidc_s_selection((void *)vidc_inst, s);
+}
+
+static int msm_v4l2_g_parm(struct file *file, void *fh,
+				struct v4l2_streamparm *a)
+{
+	struct msm_vidc_inst *vidc_inst = get_vidc_inst(file, fh);
+
+	return msm_vidc_g_parm((void *)vidc_inst, a);
+}
+
+static int msm_v4l2_s_parm(struct file *file, void *fh,
+				struct v4l2_streamparm *a)
+{
+	struct msm_vidc_inst *vidc_inst = get_vidc_inst(file, fh);
+
+	return msm_vidc_s_parm((void *)vidc_inst, a);
+}
+
 static int msm_v4l2_queryctrl(struct file *file, void *fh,
 	struct v4l2_queryctrl *ctrl)
 {
@@ -228,10 +260,22 @@ const struct v4l2_ioctl_ops msm_v4l2_ioctl_ops = {
 	.vidioc_querycap = msm_v4l2_querycap,
 	.vidioc_enum_fmt_vid_cap = msm_v4l2_enum_fmt,
 	.vidioc_enum_fmt_vid_out = msm_v4l2_enum_fmt,
+	.vidioc_enum_fmt_meta_cap = msm_v4l2_enum_fmt,
+	.vidioc_enum_fmt_meta_out = msm_v4l2_enum_fmt,
 	.vidioc_s_fmt_vid_cap_mplane = msm_v4l2_s_fmt,
 	.vidioc_s_fmt_vid_out_mplane = msm_v4l2_s_fmt,
 	.vidioc_g_fmt_vid_cap_mplane = msm_v4l2_g_fmt,
 	.vidioc_g_fmt_vid_out_mplane = msm_v4l2_g_fmt,
+	.vidioc_s_fmt_meta_cap = msm_v4l2_s_fmt,
+	.vidioc_s_fmt_meta_out = msm_v4l2_s_fmt,
+	.vidioc_g_fmt_meta_cap = msm_v4l2_g_fmt,
+	.vidioc_g_fmt_meta_out = msm_v4l2_g_fmt,
+	.vidioc_try_fmt_meta_cap = msm_v4l2_g_fmt,
+	.vidioc_try_fmt_meta_out = msm_v4l2_g_fmt,
+	.vidioc_g_selection = msm_v4l2_g_selection,
+	.vidioc_s_selection = msm_v4l2_s_selection,
+	.vidioc_g_parm = msm_v4l2_g_parm,
+	.vidioc_s_parm = msm_v4l2_s_parm,
 	.vidioc_reqbufs = msm_v4l2_reqbufs,
 	.vidioc_qbuf = msm_v4l2_qbuf,
 	.vidioc_dqbuf = msm_v4l2_dqbuf,
@@ -460,6 +504,8 @@ static int msm_vidc_register_video_device(enum session_type sess_type,
 	core->vdev[sess_type].vdev.device_caps =
 		V4L2_CAP_VIDEO_CAPTURE_MPLANE |
 		V4L2_CAP_VIDEO_OUTPUT_MPLANE |
+		V4L2_CAP_META_CAPTURE |
+		V4L2_CAP_META_OUTPUT |
 		V4L2_CAP_STREAMING;
 	rc = video_register_device(&core->vdev[sess_type].vdev,
 					VFL_TYPE_VIDEO, nr);

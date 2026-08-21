@@ -4,11 +4,10 @@
 
 #include <asm/bitsperlong.h>
 
-#if __BITS_PER_LONG == 64
-#define NV12_STRIDE_ALIGNMENT 512
-#define NV12_SCANLINE_ALIGNMENT 512
-#else
+#ifndef NV12_STRIDE_ALIGNMENT
 #define NV12_STRIDE_ALIGNMENT 128
+#endif
+#ifndef NV12_SCANLINE_ALIGNMENT
 #define NV12_SCANLINE_ALIGNMENT 32
 #endif
 

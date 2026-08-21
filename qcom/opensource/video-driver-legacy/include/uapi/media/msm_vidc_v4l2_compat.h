@@ -27,6 +27,12 @@
 #ifndef V4L2_PIX_FMT_NV12_UBWC
 #define V4L2_PIX_FMT_NV12_UBWC        v4l2_fourcc('Q', '1', '2', '8')
 #endif
+#ifndef V4L2_PIX_FMT_NV12_UBWC_C
+#define V4L2_PIX_FMT_NV12_UBWC_C      v4l2_fourcc('Q', '1', '2', 'C')
+#endif
+#ifndef V4L2_PIX_FMT_HEIC
+#define V4L2_PIX_FMT_HEIC             v4l2_fourcc('H', 'E', 'I', 'C')
+#endif
 #ifndef V4L2_PIX_FMT_NV12_TP10_UBWC
 #define V4L2_PIX_FMT_NV12_TP10_UBWC   v4l2_fourcc('Q', '1', '2', 'A')
 #endif

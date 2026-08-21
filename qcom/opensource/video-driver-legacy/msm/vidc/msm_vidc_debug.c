@@ -10,7 +10,9 @@
 #include "vidc_hfi_api.h"
 #include <linux/of_fdt.h>
 
-int msm_vidc_debug = VIDC_ERR | VIDC_HIGH | VIDC_PRINTK;
+int msm_vidc_debug = VIDC_ERR | VIDC_HIGH | VIDC_LOW | VIDC_PERF | VIDC_PKT |
+		VIDC_BUS | VIDC_PRINTK | FW_LOW | FW_MEDIUM | FW_HIGH |
+		FW_ERROR | FW_FATAL | FW_PERF | FW_PRINTK;
 EXPORT_SYMBOL(msm_vidc_debug);
 module_param(msm_vidc_debug, int, 0644);
 MODULE_PARM_DESC(msm_vidc_debug, "msm_vidc debug level");
@@ -636,6 +638,7 @@ inline void update_log_ctxt(u32 sid, u32 session_type, u32 fourcc)
 		codec = " vp9";
 		break;
 	case V4L2_PIX_FMT_HEVC:
+	case V4L2_PIX_FMT_HEIC:
 		codec = "h265";
 		break;
 	case V4L2_PIX_FMT_TME:

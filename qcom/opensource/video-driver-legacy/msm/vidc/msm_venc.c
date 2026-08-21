@@ -573,6 +573,36 @@ static struct msm_vidc_ctrl msm_venc_ctrls[] = {
 		.qmenu = NULL,
 	},
 	{
+		.id = V4L2_CID_MPEG_VIDC_VIDEO_HIER_P_NUM_LAYERS,
+		.name = "Set Hier P num layers",
+		.type = V4L2_CTRL_TYPE_INTEGER,
+		.minimum = 0,
+		.maximum = 6,
+		.default_value = 0,
+		.step = 1,
+		.qmenu = NULL,
+	},
+	{
+		.id = V4L2_CID_MPEG_VIDC_VIDEO_ALLOC_MODE_OUTPUT,
+		.name = "Alloc Mode Output",
+		.type = V4L2_CTRL_TYPE_INTEGER,
+		.minimum = 0,
+		.maximum = 3,
+		.default_value = 0,
+		.step = 1,
+		.qmenu = NULL,
+	},
+	{
+		.id = V4L2_CID_MPEG_VIDC_VIDEO_ALLOC_MODE_INPUT,
+		.name = "Alloc Mode Input",
+		.type = V4L2_CTRL_TYPE_INTEGER,
+		.minimum = 0,
+		.maximum = 3,
+		.default_value = 0,
+		.step = 1,
+		.qmenu = NULL,
+	},
+	{
 		.id = V4L2_CID_MPEG_VIDC_VIDEO_HEVC_MAX_HIER_CODING_LAYER,
 		.name = "Set Hier max layers",
 		.type = V4L2_CTRL_TYPE_INTEGER,
@@ -758,11 +788,77 @@ static struct msm_vidc_ctrl msm_venc_ctrls[] = {
 	{
 		.id = V4L2_CID_MPEG_VIDC_VIDEO_PRIORITY,
 		.name = "Session Priority",
-		.type = V4L2_CTRL_TYPE_BOOLEAN,
-		.minimum = V4L2_MPEG_MSM_VIDC_DISABLE,
-		.maximum = V4L2_MPEG_MSM_VIDC_ENABLE,
-		.default_value = V4L2_MPEG_MSM_VIDC_ENABLE,
+		.type = V4L2_CTRL_TYPE_INTEGER,
+		.minimum = 0,
+		.maximum = 100,
+		.default_value = 1,
 		.step = 1,
+	},
+	{
+		.id = V4L2_CID_MPEG_VIDEO_HEADER_MODE,
+		.name = "Sequence Header Mode",
+		.type = V4L2_CTRL_TYPE_MENU,
+		.minimum = V4L2_MPEG_VIDEO_HEADER_MODE_SEPARATE,
+		.maximum = V4L2_MPEG_VIDEO_HEADER_MODE_JOINED_WITH_1ST_FRAME,
+		.default_value = V4L2_MPEG_VIDEO_HEADER_MODE_SEPARATE,
+		.menu_skip_mask = ~(
+			(1 << V4L2_MPEG_VIDEO_HEADER_MODE_SEPARATE) |
+			(1 << V4L2_MPEG_VIDEO_HEADER_MODE_JOINED_WITH_1ST_FRAME)
+		),
+		.qmenu = NULL,
+	},
+	{
+		.id = V4L2_CID_MPEG_VIDEO_H264_HIERARCHICAL_CODING,
+		.name = "H264 Hierarchical Coding",
+		.type = V4L2_CTRL_TYPE_BOOLEAN,
+		.minimum = 0,
+		.maximum = 1,
+		.default_value = 0,
+		.step = 1,
+		.qmenu = NULL,
+	},
+	{
+		.id = V4L2_CID_MPEG_VIDEO_H264_HIERARCHICAL_CODING_TYPE,
+		.name = "H264 Hierarchical Coding Type",
+		.type = V4L2_CTRL_TYPE_MENU,
+		.minimum = V4L2_MPEG_VIDEO_H264_HIERARCHICAL_CODING_B,
+		.maximum = V4L2_MPEG_VIDEO_H264_HIERARCHICAL_CODING_P,
+		.default_value = V4L2_MPEG_VIDEO_H264_HIERARCHICAL_CODING_P,
+		.menu_skip_mask = ~(
+			(1 << V4L2_MPEG_VIDEO_H264_HIERARCHICAL_CODING_B) |
+			(1 << V4L2_MPEG_VIDEO_H264_HIERARCHICAL_CODING_P)
+		),
+		.qmenu = NULL,
+	},
+	{
+		.id = V4L2_CID_MPEG_VIDEO_H264_HIERARCHICAL_CODING_LAYER,
+		.name = "H264 Number of HC Layers",
+		.type = V4L2_CTRL_TYPE_INTEGER,
+		.minimum = 0,
+		.maximum = MAX_HIER_CODING_LAYER,
+		.default_value = 0,
+		.step = 1,
+		.qmenu = NULL,
+	},
+	{
+		.id = V4L2_CID_MPEG_VIDEO_H264_HIERARCHICAL_CODING_LAYER_QP,
+		.name = "H264 Set Layer QP",
+		.type = V4L2_CTRL_TYPE_INTEGER,
+		.minimum = 0,
+		.maximum = 51,
+		.default_value = 0,
+		.step = 1,
+		.qmenu = NULL,
+	},
+	{
+		.id = V4L2_CID_MPEG_VIDC_VIDEO_HIER_B_NUM_LAYERS,
+		.name = "Set Hier B num layers",
+		.type = V4L2_CTRL_TYPE_INTEGER,
+		.minimum = 0,
+		.maximum = 6,
+		.default_value = 0,
+		.step = 1,
+		.qmenu = NULL,
 	},
 	{
 		.id = V4L2_CID_MPEG_VIDC_VIDEO_OPERATING_RATE,
@@ -1028,6 +1124,11 @@ static struct msm_vidc_format_desc venc_input_formats[] = {
 		.fourcc = V4L2_PIX_FMT_NV12_UBWC,
 	},
 	{
+		.name = "UBWC YCbCr Semiplanar 4:2:0 (QC08C)",
+		.description = "UBWC Y/CbCr 4:2:0 QC08C",
+		.fourcc = V4L2_PIX_FMT_NV12_UBWC_C,
+	},
+	{
 		.name = "YCrCb Semiplanar 4:2:0",
 		.description = "Y/CrCb 4:2:0",
 		.fourcc = V4L2_PIX_FMT_NV21,
@@ -1064,6 +1165,11 @@ static struct msm_vidc_format_desc venc_output_formats[] = {
 		.name = "HEVC",
 		.description = "HEVC compressed format",
 		.fourcc = V4L2_PIX_FMT_HEVC,
+	},
+	{
+		.name = "HEIC",
+		.description = "HEIC compressed format",
+		.fourcc = V4L2_PIX_FMT_HEIC,
 	},
 };
 
@@ -1335,6 +1441,13 @@ int msm_venc_s_fmt(struct msm_vidc_inst *inst, struct v4l2_format *f)
 		mplane->height = f->fmt.pix_mp.height;
 		mplane->pixelformat = f->fmt.pix_mp.pixelformat;
 
+		if (f->fmt.pix_mp.width && f->fmt.pix_mp.height) {
+			inst->fmts[INPUT_PORT].v4l2_fmt.fmt.pix_mp.width = f->fmt.pix_mp.width;
+			inst->fmts[INPUT_PORT].v4l2_fmt.fmt.pix_mp.height = f->fmt.pix_mp.height;
+			inst->fmts[INPUT_PORT].v4l2_fmt.fmt.pix_mp.plane_fmt[0].sizeimage =
+				msm_vidc_calculate_enc_input_frame_size(inst);
+		}
+
 		if (!inst->profile) {
 			rc = msm_venc_set_default_profile(inst);
 			if (rc) {
@@ -1394,10 +1507,8 @@ int msm_venc_s_fmt(struct msm_vidc_inst *inst, struct v4l2_format *f)
 				msm_vidc_calculate_enc_input_extra_size(inst);
 		color_format = msm_comm_convert_color_fmt(
 			f->fmt.pix_mp.pixelformat, inst->sid);
-		mplane->plane_fmt[0].bytesperline =
-			VENUS_Y_STRIDE(color_format, f->fmt.pix_mp.width);
-		mplane->plane_fmt[0].reserved[0] =
-			VENUS_Y_SCANLINES(color_format, f->fmt.pix_mp.height);
+		mplane->plane_fmt[0].bytesperline = f->fmt.pix_mp.width;
+		mplane->plane_fmt[0].reserved[0] = f->fmt.pix_mp.height;
 		inst->bit_depth = MSM_VIDC_BIT_DEPTH_8;
 		if ((f->fmt.pix_mp.pixelformat ==
 			V4L2_PIX_FMT_NV12_TP10_UBWC) ||
@@ -1405,6 +1516,12 @@ int msm_venc_s_fmt(struct msm_vidc_inst *inst, struct v4l2_format *f)
 			V4L2_PIX_FMT_SDE_Y_CBCR_H2V2_P010_VENUS)) {
 			inst->bit_depth = MSM_VIDC_BIT_DEPTH_10;
 		}
+
+		/* Synchronize OUTPUT_PORT (bitstream capture) width & height and sizeimage */
+		inst->fmts[OUTPUT_PORT].v4l2_fmt.fmt.pix_mp.width = f->fmt.pix_mp.width;
+		inst->fmts[OUTPUT_PORT].v4l2_fmt.fmt.pix_mp.height = f->fmt.pix_mp.height;
+		inst->fmts[OUTPUT_PORT].v4l2_fmt.fmt.pix_mp.plane_fmt[0].sizeimage =
+			msm_vidc_calculate_enc_output_frame_size(inst);
 
 		rc = msm_vidc_calculate_buffer_counts(inst);
 		if (rc) {
@@ -1422,6 +1539,18 @@ int msm_venc_s_fmt(struct msm_vidc_inst *inst, struct v4l2_format *f)
 		}
 
 		memcpy(f, &fmt->v4l2_fmt, sizeof(struct v4l2_format));
+	} else if (f->type == 14 /* V4L2_BUF_TYPE_META_OUTPUT */) {
+		f->fmt.meta.dataformat = 0;
+		f->fmt.meta.buffersize = msm_vidc_calculate_enc_input_extra_size(inst);
+		if (!f->fmt.meta.buffersize)
+			f->fmt.meta.buffersize = 4096;
+		return 0;
+	} else if (f->type == 13 /* V4L2_BUF_TYPE_META_CAPTURE */) {
+		f->fmt.meta.dataformat = 0;
+		f->fmt.meta.buffersize = msm_vidc_calculate_enc_output_extra_size(inst);
+		if (!f->fmt.meta.buffersize)
+			f->fmt.meta.buffersize = 4096;
+		return 0;
 	} else {
 		s_vpr_e(inst->sid, "%s: Unsupported buf type: %d\n",
 			__func__, f->type);
@@ -1439,7 +1568,8 @@ int msm_venc_set_default_profile(struct msm_vidc_inst *inst)
 		return -EINVAL;
 	}
 
-	if (get_v4l2_codec(inst) == V4L2_PIX_FMT_HEVC)
+	if (get_v4l2_codec(inst) == V4L2_PIX_FMT_HEVC ||
+	    get_v4l2_codec(inst) == V4L2_PIX_FMT_HEIC)
 		inst->profile = HFI_HEVC_PROFILE_MAIN;
 	else if (get_v4l2_codec(inst) == V4L2_PIX_FMT_VP8)
 		inst->profile = HFI_VP8_PROFILE_MAIN;
@@ -1472,6 +1602,16 @@ int msm_venc_g_fmt(struct msm_vidc_inst *inst, struct v4l2_format *f)
 				msm_vidc_calculate_enc_input_extra_size(inst);
 		}
 		memcpy(f, fmt, sizeof(struct v4l2_format));
+	} else if (f->type == 14 /* V4L2_BUF_TYPE_META_OUTPUT */) {
+		f->fmt.meta.dataformat = 0;
+		f->fmt.meta.buffersize = msm_vidc_calculate_enc_input_extra_size(inst);
+		if (!f->fmt.meta.buffersize)
+			f->fmt.meta.buffersize = 4096;
+	} else if (f->type == 13 /* V4L2_BUF_TYPE_META_CAPTURE */) {
+		f->fmt.meta.dataformat = 0;
+		f->fmt.meta.buffersize = msm_vidc_calculate_enc_output_extra_size(inst);
+		if (!f->fmt.meta.buffersize)
+			f->fmt.meta.buffersize = 4096;
 	} else {
 		s_vpr_e(inst->sid, "%s: Unsupported buf type: %d\n",
 			__func__, f->type);
@@ -1853,6 +1993,10 @@ int msm_venc_s_ctrl(struct msm_vidc_inst *inst, struct v4l2_ctrl *ctrl)
 		}
 		inst->client_set_ctrls |= CLIENT_SET_B_QP;
 		break;
+	case V4L2_CID_MPEG_VIDC_VIDEO_ALLOC_MODE_OUTPUT:
+	case V4L2_CID_MPEG_VIDC_VIDEO_ALLOC_MODE_INPUT:
+		break;
+	case V4L2_CID_MPEG_VIDC_VIDEO_HIER_P_NUM_LAYERS:
 	case V4L2_CID_MPEG_VIDEO_HEVC_HIER_CODING_LAYER:
 		if (inst->state == MSM_VIDC_START_DONE) {
 			rc = msm_venc_set_hp_layer(inst);
@@ -1981,6 +2125,12 @@ int msm_venc_s_ctrl(struct msm_vidc_inst *inst, struct v4l2_ctrl *ctrl)
 	case V4L2_CID_MPEG_VIDEO_H264_CHROMA_QP_INDEX_OFFSET:
 	case V4L2_CID_MPEG_VIDC_SUPERFRAME:
 	case V4L2_CID_MPEG_VIDC_ENABLE_ONLY_BASE_LAYER_IR:
+	case V4L2_CID_MPEG_VIDEO_HEADER_MODE:
+	case V4L2_CID_MPEG_VIDEO_H264_HIERARCHICAL_CODING:
+	case V4L2_CID_MPEG_VIDEO_H264_HIERARCHICAL_CODING_TYPE:
+	case V4L2_CID_MPEG_VIDEO_H264_HIERARCHICAL_CODING_LAYER:
+	case V4L2_CID_MPEG_VIDEO_H264_HIERARCHICAL_CODING_LAYER_QP:
+	case V4L2_CID_MPEG_VIDC_VIDEO_HIER_B_NUM_LAYERS:
 		s_vpr_h(sid, "Control set: ID : 0x%x Val : %d\n",
 			ctrl->id, ctrl->val);
 		break;
@@ -3724,9 +3874,14 @@ int msm_venc_set_hp_layer(struct msm_vidc_inst *inst)
 		V4L2_CID_MPEG_VIDC_VIDEO_HEVC_MAX_HIER_CODING_LAYER);
 	ctrl = get_ctrl(inst,
 		V4L2_CID_MPEG_VIDEO_HEVC_HIER_CODING_LAYER);
+	if (!ctrl)
+		ctrl = get_ctrl(inst,
+			V4L2_CID_MPEG_VIDC_VIDEO_HIER_P_NUM_LAYERS);
+	if (!ctrl)
+		return 0;
 	s_vpr_h(inst->sid, "%s: heir_layer: %d, max_hier_layer: %d\n",
-			__func__, ctrl->val, max_layer->val);
-	if (max_layer->val < ctrl->val) {
+			__func__, ctrl->val, max_layer ? max_layer->val : 0);
+	if (max_layer && max_layer->val > 0 && max_layer->val < ctrl->val) {
 		s_vpr_e(inst->sid,
 			"%s: HP layer count greater than max isn't allowed\n",
 			__func__);

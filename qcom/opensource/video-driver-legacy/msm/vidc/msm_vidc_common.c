@@ -1358,6 +1358,7 @@ static int wait_for_sess_signal_receipt(struct msm_vidc_inst *inst,
 	if (!rc) {
 		s_vpr_e(inst->sid, "Wait interrupted or timed out: %d\n",
 				SESSION_MSG_INDEX(cmd));
+		call_hfi_op(hdev, noc_error_info, hdev->hfi_device_data);
 		msm_comm_kill_session(inst);
 		rc = -EIO;
 	} else {
@@ -3018,6 +3019,8 @@ int msm_comm_check_core_init(struct msm_vidc_core *core, u32 sid)
 	if (!rc) {
 		s_vpr_e(sid, "%s: Wait interrupted or timed out: %d\n",
 				__func__, SYS_MSG_INDEX(HAL_SYS_INIT_DONE));
+		call_hfi_op(core->device, noc_error_info,
+				core->device->hfi_device_data);
 		rc = -EIO;
 		goto exit;
 	} else {
@@ -3786,6 +3789,7 @@ u32 msm_comm_convert_color_fmt(u32 v4l2_fmt, u32 sid)
 	case V4L2_PIX_FMT_SDE_Y_CBCR_H2V2_P010_VENUS:
 		return COLOR_FMT_P010;
 	case V4L2_PIX_FMT_NV12_UBWC:
+	case V4L2_PIX_FMT_NV12_UBWC_C:
 		return COLOR_FMT_NV12_UBWC;
 	case V4L2_PIX_FMT_NV12_TP10_UBWC:
 		return COLOR_FMT_NV12_BPP10_UBWC;
